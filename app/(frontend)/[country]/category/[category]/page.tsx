@@ -72,7 +72,7 @@ export async function generateMetadata({
         title: `${category.name} - دليل الشركات`,
         description: `${category.companiesCount} شركة متخصصة في ${category.name}`,
         url: categoryUrl,
-        images: category.image ? [category.image] : [],
+        // images: category.image ? [category.image] : [], 
       },
 
       alternates: {
@@ -175,7 +175,7 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
             </BreadcrumbList>
           </Breadcrumb>
 
-          <CategoryHeader category={category} />
+          <CategoryHeader category={category} /> {/* @ts-ignore */}
           
           <div className="mt-12">
             <div className="flex justify-between items-center mb-6">

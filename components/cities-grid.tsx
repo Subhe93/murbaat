@@ -1,7 +1,12 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { Building2 } from 'lucide-react';
-import { City } from '@/lib/data';
+interface City {
+  slug: string;
+  name: string;
+  image?: string;
+  companiesCount: number;
+}
 
 interface CitiesGridProps {
   cities: City[];
@@ -19,7 +24,7 @@ export function CitiesGrid({ cities, countryCode }: CitiesGridProps) {
         >
           <div className="relative h-32 overflow-hidden">
             <Image
-              src={city.image}
+              src={city.image || '/images/city-placeholder.jpg'}
               alt={city.name}
               fill
               className="object-cover group-hover:scale-110 transition-transform duration-300"

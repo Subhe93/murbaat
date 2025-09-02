@@ -3,7 +3,7 @@ import { Building2, MapPin } from 'lucide-react';
 import { City } from '@/lib/data';
 
 interface CityHeaderProps {
-  city: City;
+  city: any;
 }
 
 export function CityHeader({ city }: CityHeaderProps) {

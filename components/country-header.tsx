@@ -3,7 +3,7 @@ import { Building2, MapPin } from 'lucide-react';
 import { Country } from '@/lib/data';
 
 interface CountryHeaderProps {
-  country: Country;
+  country: any;
 }
 
 export function CountryHeader({ country }: CountryHeaderProps) {

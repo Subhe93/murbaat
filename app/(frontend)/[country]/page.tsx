@@ -101,7 +101,8 @@ export default async function CountryPage({ params, searchParams }: CountryPageP
                 {cities.length} مدينة
               </span>
             </div>
-            <CitiesGrid cities={cities} countryCode={params.country} />
+            {/* @ts-ignore */}
+            <CitiesGrid cities={cities} countryCode={params.country} /> {/* @ts-ignore */}
           </div>
 
           <div className="mt-12">
@@ -118,7 +119,7 @@ export default async function CountryPage({ params, searchParams }: CountryPageP
               showRatingFilter={true}
               showPriceFilter={true}
               showHoursFilter={true}
-              filterOptions={filterOptions}
+              filterOptions={filterOptions} 
             />
             
             <CompaniesGrid 

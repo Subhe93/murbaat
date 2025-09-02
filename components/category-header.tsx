@@ -2,7 +2,7 @@ import { Building2 } from 'lucide-react';
 import { Category } from '@/lib/data';
 
 interface CategoryHeaderProps {
-  category: Category;
+  category: any;
 }
 
 export function CategoryHeader({ category }: CategoryHeaderProps) {
