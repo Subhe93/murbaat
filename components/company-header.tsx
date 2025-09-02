@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import Image from 'next/image';
 import { Star, MapPin, Phone, Globe, Mail, Clock, Users, CheckCircle, Facebook, Twitter, Instagram, Linkedin, Share2, Navigation } from 'lucide-react';
 import { Button } from '@/components/ui/button';
