@@ -19,7 +19,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Progress } from '@/components/ui/progress'
+// import { Progress } from '@/components/ui/progress'
 import {
   Select,
   SelectContent,
@@ -399,7 +399,12 @@ export default function AdminAnalyticsPage() {
                     </div>
                   </div>
                   <div className="flex items-center space-x-2 space-x-reverse">
-                    <Progress value={country.percentage} className="w-20" />
+                    <div className="w-20 bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-blue-600 h-2 rounded-full" 
+                        style={{ width: `${country.percentage}%` }}
+                      ></div>
+                    </div>
                     <span className="text-sm text-gray-500 w-8">{country.percentage}%</span>
                   </div>
                 </div>
@@ -428,7 +433,12 @@ export default function AdminAnalyticsPage() {
                     </div>
                   </div>
                   <div className="flex items-center space-x-2 space-x-reverse">
-                    <Progress value={category.percentage} className="w-20" />
+                    <div className="w-20 bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-green-600 h-2 rounded-full" 
+                        style={{ width: `${category.percentage}%` }}
+                      ></div>
+                    </div>
                     <span className="text-sm text-gray-500 w-8">{category.percentage}%</span>
                   </div>
                 </div>

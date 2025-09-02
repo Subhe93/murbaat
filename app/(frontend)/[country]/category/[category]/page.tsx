@@ -99,7 +99,7 @@ interface CategoryPageProps {
   }
 }
 
-export default async function CategoryPage({ params, searchParams }: CategoryPageProps) {
+export default async function CategoryPage({ params, searchParams = {} }: CategoryPageProps) {
   try {
     const category = await getCategoryBySlug(params.category);
 

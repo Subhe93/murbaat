@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
+// import { Progress } from '@/components/ui/progress'
 import { Star, Building2, MessageSquare } from 'lucide-react'
 
 interface AdvancedStatsProps {

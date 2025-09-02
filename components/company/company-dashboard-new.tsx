@@ -24,7 +24,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Progress } from '@/components/ui/progress'
+// import { Progress } from '@/components/ui/progress'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 
 // واجهات البيانات
@@ -221,7 +221,13 @@ export function CompanyDashboard() {
               {company.stats.averageRating.toFixed(1)}
               <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
             </div>
-            <Progress value={(company.stats.averageRating / 5) * 100} className="mt-2" />
+            {/* <Progress value={(company.stats.averageRating / 5) * 100} className="mt-2" /> */}
+            <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+              <div 
+                className="bg-blue-600 h-2 rounded-full" 
+                style={{ width: `${(company.stats.averageRating / 5) * 100}%` }}
+              ></div>
+            </div>
           </CardContent>
         </Card>
 

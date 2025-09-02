@@ -22,7 +22,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Progress } from '@/components/ui/progress'
+// import { Progress } from '@/components/ui/progress'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
 interface AdminStats {
@@ -323,7 +323,12 @@ export function AdminDashboard() {
                       </div>
                     </div>
                     <div className="flex items-center space-x-2 space-x-reverse">
-                      <Progress value={percentage} className="w-20" />
+                      <div className="w-20 bg-gray-200 rounded-full h-2">
+                        <div 
+                          className="bg-blue-600 h-2 rounded-full" 
+                          style={{ width: `${percentage}%` }}
+                        ></div>
+                      </div>
                       <span className="text-sm text-gray-500 w-8">{percentage}%</span>
                     </div>
                   </div>
@@ -355,7 +360,12 @@ export function AdminDashboard() {
                       </div>
                     </div>
                     <div className="flex items-center space-x-2 space-x-reverse">
-                      <Progress value={percentage} className="w-20" />
+                      <div className="w-20 bg-gray-200 rounded-full h-2">
+                        <div 
+                          className="bg-blue-600 h-2 rounded-full" 
+                          style={{ width: `${percentage}%` }}
+                        ></div>
+                      </div>
                       <span className="text-sm text-gray-500 w-8">{percentage}%</span>
                     </div>
                   </div>

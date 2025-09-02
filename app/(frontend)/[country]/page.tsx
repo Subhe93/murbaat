@@ -1,5 +1,6 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import Link from 'next/link';
 import { CountryHeader } from '@/components/country-header';
 import { CitiesGrid } from '@/components/cities-grid';
 import { CompaniesGrid } from '@/components/companies-grid';
@@ -42,7 +43,7 @@ interface CountryPageProps {
   }
 }
 
-export default async function CountryPage({ params, searchParams }: CountryPageProps) {
+export default async function CountryPage({ params, searchParams = {} }: CountryPageProps) {
   try {
     const [countryData, cities, filterOptions] = await Promise.all([
       getCountryByCode(params.country),
