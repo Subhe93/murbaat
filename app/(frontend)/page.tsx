@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { Metadata } from 'next';
 import { HomeHero } from '@/components/home-hero';
 import { CountriesGrid } from '@/components/countries-grid';

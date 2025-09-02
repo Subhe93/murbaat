@@ -82,8 +82,8 @@ export function Navbar() {
               {/* قائمة المستخدم */}
               {status === 'loading' ? (
                 <div className="flex items-center space-x-2 space-x-reverse">
-                  <div className="w-20 h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-                  <div className="w-24 h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                  <div className="w-6 md:w-24 h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                  <div className="w-6 md:w-24 h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
                 </div>
               ) : session ? (
                 <DropdownMenu>
@@ -139,7 +139,7 @@ export function Navbar() {
                   </DropdownMenuContent>
                 </DropdownMenu>
               ) : (
-                <div className="flex items-center space-x-2 space-x-reverse">
+                <div className="hidden md:flex items-center space-x-2 space-x-reverse">
                   <Button variant="ghost" asChild>
                     <Link href="/auth/signin">
                       تسجيل الدخول
@@ -166,7 +166,7 @@ export function Navbar() {
           </div>
 
           {/* Mobile Menu */}
-          {isMenuOpen && (
+                        {isMenuOpen && (
             <div className="md:hidden border-t border-gray-200 dark:border-gray-700 py-4">
               <div className="space-y-3">
                 <Link 
@@ -204,6 +204,24 @@ export function Navbar() {
                 >
                   الأردن
                 </Link>
+                {!session && (
+                  <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <Link 
+                      href="/auth/signin"
+                      className="block text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 mb-3"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      تسجيل الدخول
+                    </Link>
+                    <Link 
+                      href="/add-company"
+                      className="block text-white bg-brand-green hover:bg-brand-green/90 px-4 py-2 rounded-md text-center"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      إضافة شركة
+                    </Link>
+                  </div>
+                )}
               </div>
             </div>
           )}

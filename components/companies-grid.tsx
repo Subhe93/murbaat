@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic"; 
 import Link from 'next/link';
 import Image from 'next/image';
 import { Star, MapPin, Phone, Globe, Verified } from 'lucide-react';
@@ -57,6 +58,7 @@ export function CompaniesGrid({ companies, pagination }: CompaniesGridProps) {
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      
         {companies.map((company) => (
           <Link
             key={company.slug}
