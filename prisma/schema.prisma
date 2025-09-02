@@ -451,6 +451,25 @@ model Notification {
   @@map("notifications")
 }
 
+// جدول سجلات البريد الإلكتروني
+model EmailLog {
+  id           String       @id @default(cuid())
+  to           String
+  subject      String
+  template     String?
+  payload      Json?
+  status       EmailStatus  @default(PENDING)
+  errorMessage String?
+  sentAt       DateTime?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@index([to])
+  @@index([status])
+  @@index([createdAt])
+  @@map("email_logs")
+}
+
 // جدول الإعدادات العامة
 model Setting {
   id          String    @id @default(cuid())
@@ -505,6 +524,12 @@ enum SettingType {
   NUMBER
   BOOLEAN
   JSON
+}
+
+enum EmailStatus {
+  PENDING
+  SENT
+  FAILED
 }
 
 enum DayOfWeek {

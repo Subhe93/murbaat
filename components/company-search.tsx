@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Search, Building2, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,9 +12,9 @@ interface CompanySearchResult {
   slug: string;
   name: string;
   description: string;
-  category: string;
-  city: string;
-  country: string;
+  category: string; // category slug
+  city: string; // city slug
+  country: string; // country code
   image: string;
   rating: number;
   reviewsCount: number;
@@ -22,115 +22,113 @@ interface CompanySearchResult {
 }
 
 interface CompanySearchProps {
-  currentCity: string;
-  currentCountry: string;
+  currentCity: string; // city slug for API/links
+  currentCountry: string; // country code for API/links
   currentCompanySlug: string;
+  cityName: string; // Arabic display name
 }
 
-// Mock data for companies in the same city
-const getCityCompanies = (city: string, country: string, currentSlug: string): CompanySearchResult[] => {
-  const allCompanies: CompanySearchResult[] = [
-    {
-      slug: 'tech-solutions',
-      name: 'حلول التقنية المتقدمة',
-      description: 'شركة متخصصة في تطوير البرمجيات وحلول الأعمال الرقمية',
-      category: 'technology',
-      city: 'damascus',
-      country: 'sy',
-      image: 'https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg',
-      rating: 4.7,
-      reviewsCount: 89,
-      tags: ['تطوير المواقع', 'التطبيقات المحمولة'],
-    },
-    {
-      slug: 'digital-innovations',
-      name: 'الابتكارات الرقمية',
-      description: 'نقدم حلول تقنية مبتكرة للشركات والمؤسسات',
-      category: 'technology',
-      city: 'damascus',
-      country: 'sy',
-      image: 'https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg',
-      rating: 4.5,
-      reviewsCount: 67,
-      tags: ['الذكاء الاصطناعي', 'البيانات الضخمة'],
-    },
-    {
-      slug: 'blue-hospital',
-      name: 'مستشفى الأزرق',
-      description: 'مستشفى متخصص في الرعاية الصحية الشاملة',
-      category: 'healthcare',
-      city: 'damascus',
-      country: 'sy',
-      image: 'https://images.pexels.com/photos/236380/pexels-photo-236380.jpeg',
-      rating: 4.4,
-      reviewsCount: 156,
-      tags: ['طب عام', 'جراحة', 'أطفال'],
-    },
-    {
-      slug: 'golden-restaurant',
-      name: 'مطعم الذهبي',
-      description: 'مطعم فاخر يقدم أشهى الأطباق العربية والعالمية',
-      category: 'food',
-      city: 'damascus',
-      country: 'sy',
-      image: 'https://images.pexels.com/photos/260922/pexels-photo-260922.jpeg',
-      rating: 4.6,
-      reviewsCount: 234,
-      tags: ['مأكولات عربية', 'مأكولات عالمية', 'مطعم فاخر'],
-    },
-    {
-      slug: 'smart-education',
-      name: 'التعليم الذكي',
-      description: 'مركز تعليمي متطور يقدم دورات في التكنولوجيا والبرمجة',
-      category: 'education',
-      city: 'damascus',
-      country: 'sy',
-      image: 'https://images.pexels.com/photos/289737/pexels-photo-289737.jpeg',
-      rating: 4.8,
-      reviewsCount: 178,
-      tags: ['برمجة', 'تصميم', 'تدريب'],
-    },
-  ];
-
-  return allCompanies
-    .filter(company => 
-      company.city === city && 
-      company.country === country &&
-      company.slug !== currentSlug
-    );
-};
-
-export function CompanySearch({ currentCity, currentCountry, currentCompanySlug }: CompanySearchProps) {
+export function CompanySearch({ currentCity, currentCountry, currentCompanySlug, cityName }: CompanySearchProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
-  
-  const cityCompanies = getCityCompanies(currentCity, currentCountry, currentCompanySlug);
-  
-  const filteredCompanies = cityCompanies.filter(company => {
-    const matchesSearch = company.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         company.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         company.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
-    
-    const matchesCategory = !selectedCategory || company.category === selectedCategory;
-    
-    return matchesSearch && matchesCategory;
-  });
-
-  const categories = [
+  const [results, setResults] = useState<CompanySearchResult[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [categories, setCategories] = useState<Array<{ value: string; label: string }>>([
     { value: '', label: 'جميع الفئات' },
-    { value: 'technology', label: 'التكنولوجيا' },
-    { value: 'healthcare', label: 'الرعاية الصحية' },
-    { value: 'education', label: 'التعليم' },
-    { value: 'food', label: 'الأغذية والمطاعم' },
-    { value: 'retail', label: 'التجارة والبيع' },
-  ];
+  ]);
+  const [categoriesLoading, setCategoriesLoading] = useState(false);
+
+  // Debounced query to avoid spamming API
+  const debouncedQuery = useMemo(() => searchQuery, [searchQuery]);
+
+  useEffect(() => {
+    let isCancelled = false;
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const params = new URLSearchParams();
+        params.set('country', currentCountry);
+        params.set('city', currentCity);
+        params.set('limit', '12');
+        if (debouncedQuery.trim()) params.set('query', debouncedQuery.trim());
+        if (selectedCategory) params.set('category', selectedCategory);
+
+        const res = await fetch(`/api/companies?${params.toString()}`, { signal: controller.signal });
+        if (!res.ok) throw new Error('فشل جلب الشركات');
+        const data = await res.json();
+
+        const companies = (data?.data || []) as Array<any>;
+        const mapped: CompanySearchResult[] = companies
+          .filter((c) => c.slug !== currentCompanySlug)
+          .map((c) => ({
+            slug: c.slug,
+            name: c.name,
+            description: c.shortDescription || c.description || '',
+            category: c.category?.slug || '',
+            city: c.city?.slug || '',
+            country: c.country?.code || '',
+            image: c.mainImage || c.images?.[0]?.imageUrl || '/uploads/placeholder.png',
+            rating: typeof c.rating === 'number' ? c.rating : 0,
+            reviewsCount: typeof c.reviewsCount === 'number' ? c.reviewsCount : (c._count?.reviews || 0),
+            tags: Array.isArray(c.tags) ? c.tags.map((t: any) => t.tagName || String(t)) : [],
+          }));
+
+        if (!isCancelled) setResults(mapped);
+      } catch (e: any) {
+        if (!isCancelled && e.name !== 'AbortError') setError(e.message || 'حدث خطأ غير متوقع');
+      } finally {
+        if (!isCancelled) setIsLoading(false);
+      }
+    }, 300);
+
+    return () => {
+      isCancelled = true;
+      controller.abort();
+      clearTimeout(timer);
+    };
+  }, [currentCity, currentCountry, currentCompanySlug, debouncedQuery, selectedCategory]);
+
+  // Load categories dynamically
+  useEffect(() => {
+    let isCancelled = false;
+    const controller = new AbortController();
+    const load = async () => {
+      try {
+        setCategoriesLoading(true);
+        const res = await fetch('/api/categories?activeOnly=true', { signal: controller.signal });
+        if (!res.ok) throw new Error('فشل جلب الفئات');
+        const data = await res.json();
+        const cats: Array<{ slug: string; name: string }> = data?.categories || [];
+        if (!isCancelled) {
+          setCategories([
+            { value: '', label: 'جميع الفئات' },
+            ...cats.map((c) => ({ value: c.slug, label: c.name })),
+          ]);
+        }
+      } catch (e) {
+        // ignore errors silently in UI, keep default option
+      } finally {
+        if (!isCancelled) setCategoriesLoading(false);
+      }
+    };
+    load();
+    return () => {
+      isCancelled = true;
+      controller.abort();
+    };
+  }, []);
+
+  // categories state used instead of static list
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
       <div className="flex items-center space-x-3 space-x-reverse mb-6">
         <Search className="h-6 w-6 text-blue-600" />
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-          البحث في شركات {currentCity}
+          البحث في شركات {cityName}
         </h2>
       </div>
 
@@ -168,19 +166,25 @@ export function CompanySearch({ currentCity, currentCountry, currentCompanySlug 
 
         <div className="flex items-center space-x-2 space-x-reverse text-sm text-gray-600 dark:text-gray-400">
           <MapPin className="h-4 w-4" />
-          <span>عرض النتائج من {currentCity} فقط</span>
+          <span>عرض النتائج من {cityName} فقط</span>
         </div>
       </div>
 
       {/* Search Results */}
       <div className="space-y-4">
-        {filteredCompanies.length === 0 ? (
+        {isLoading && (
+          <div className="text-center py-6 text-sm text-gray-500 dark:text-gray-400">جاري البحث...</div>
+        )}
+        {error && (
+          <div className="text-center py-6 text-sm text-red-600">{error}</div>
+        )}
+        {!isLoading && !error && (results.length === 0 ? (
           <div className="text-center py-8">
             <Search className="h-12 w-12 text-gray-300 mx-auto mb-3" />
             <p className="text-gray-500 dark:text-gray-400">
               {searchQuery || selectedCategory 
-                ? `لا توجد نتائج للبحث "${searchQuery}" في ${currentCity}`
-                : `لا توجد شركات أخرى في ${currentCity} حالياً`
+                ? `لا توجد نتائج للبحث "${searchQuery}" في ${cityName}`
+                : `لا توجد شركات أخرى في ${cityName} حالياً`
               }
             </p>
           </div>
@@ -188,12 +192,12 @@ export function CompanySearch({ currentCity, currentCountry, currentCompanySlug 
           <>
             <div className="flex items-center justify-between mb-4">
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                تم العثور على {filteredCompanies.length} شركة في {currentCity}
+                تم العثور على {results.length} شركة في {cityName}
               </p>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {filteredCompanies.slice(0, 6).map((company) => (
+              {results.slice(0, 6).map((company) => (
                 <Link
                   key={company.slug}
                   href={`/${company.country}/city/${company.city}/company/${company.slug}`}
@@ -239,17 +243,17 @@ export function CompanySearch({ currentCity, currentCountry, currentCompanySlug 
               ))}
             </div>
 
-            {filteredCompanies.length > 6 && (
+            {results.length > 6 && (
               <div className="text-center mt-4">
                 <Link href={`/${currentCountry}/city/${currentCity}`}>
                   <Button variant="outline" className="px-6">
-                    عرض المزيد من الشركات في {currentCity}
+                    عرض المزيد من الشركات في {cityName}
                   </Button>
                 </Link>
               </div>
             )}
           </>
-        )}
+        ))}
       </div>
     </div>
   );

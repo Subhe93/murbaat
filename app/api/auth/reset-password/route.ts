@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import prisma from '@/lib/prisma'
+import { sendEmailAndLog } from '@/lib/email'
 
 const resetPasswordSchema = z.object({
   email: z.string().email('بريد إلكتروني غير صحيح')
@@ -31,16 +32,29 @@ export async function POST(request: NextRequest) {
       data: { tempPassword }
     })
 
-    // إرسال كلمة المرور المؤقتة (مؤقتاً في console)
-    console.log('كلمة المرور المؤقتة الجديدة:', {
-      email: user.email,
-      name: user.name,
-      tempPassword,
-      resetAt: new Date().toISOString()
-    })
+    // إرسال كلمة المرور المؤقتة بالبريد وتسجيل السجل
+    const html = `
+      <div style="font-family:Tahoma,Arial,sans-serif;direction:rtl;text-align:right">
+        <h2>إعادة تعيين كلمة المرور</h2>
+        <p>مرحباً ${user.name || ''},</p>
+        <p>هذه هي كلمة المرور المؤقتة الخاصة بك:</p>
+        <p style="font-size:18px;font-weight:bold;background:#f5f5f5;padding:10px;border-radius:6px;text-align:center">${tempPassword}</p>
+        <p>استخدمها لتسجيل الدخول وسيُطلب منك تغييرها بعد الدخول.</p>
+        <p style="color:#888">إن لم تطلب ذلك فتجاهل هذه الرسالة.</p>
+      </div>
+    `
 
-    // هنا يمكن إضافة خدمة البريد الإلكتروني لإرسال كلمة المرور
-    // await sendPasswordResetEmail(user.email, user.name, tempPassword)
+    try {
+      await sendEmailAndLog({
+        to: user.email,
+        subject: 'إعادة تعيين كلمة المرور - مربعات',
+        html,
+        template: 'reset-password',
+        payload: { userId: user.id }
+      })
+    } catch (e) {
+      // لا نفشل الطلب الأساسي حتى لا نكشف التفاصيل للمهاجم؛ نعيد نجاحاً عاماً
+    }
 
     return NextResponse.json({
       success: true,
@@ -53,8 +67,9 @@ export async function POST(request: NextRequest) {
     console.error('خطأ في إعادة تعيين كلمة المرور:', error)
     
     if (error instanceof z.ZodError) {
+      const formatted = error.issues ?? []
       return NextResponse.json(
-        { error: 'بيانات غير صحيحة', details: error.errors },
+        { error: 'بيانات غير صحيحة', details: formatted },
         { status: 400 }
       )
     }

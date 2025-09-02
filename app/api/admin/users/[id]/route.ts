@@ -84,6 +84,9 @@ export async function PATCH(
   }
 }
 
+// ربط/إلغاء ربط مستخدم بشركة كمالك
+// ملاحظة: مسارات ربط الشركات للمستخدم موجودة في: /api/admin/users/[id]/companies
+
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }

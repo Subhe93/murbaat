@@ -73,6 +73,7 @@ import { AddUserModal } from '@/components/admin/add-user-modal'
 import { EditUserModal } from '@/components/admin/edit-user-modal'
 import { ExportUsersModal } from '@/components/admin/export-users-modal'
 import { ViewUserModal } from '@/components/admin/view-user-modal'
+import { LinkUserToCompanyModal } from '@/components/admin/link-user-to-company-modal'
 import { ChangePasswordModal } from '@/components/admin/change-password-modal'
 
 interface User {
@@ -119,6 +120,7 @@ export default function AdminUsersPage() {
   const [viewModalOpen, setViewModalOpen] = useState(false)
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [passwordModalOpen, setPasswordModalOpen] = useState(false)
+  const [linkCompanyOpen, setLinkCompanyOpen] = useState(false)
   const [rowsPerPage, setRowsPerPage] = useState(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('usersRowsPerPage')
@@ -906,10 +908,10 @@ export default function AdminUsersPage() {
                                 تغيير كلمة المرور
                               </DropdownMenuItem>
                             )}
-                            <DropdownMenuItem>
+                            {/* <DropdownMenuItem>
                               <Mail className="h-4 w-4 ml-2" />
                               إرسال رسالة
-                            </DropdownMenuItem>
+                            </DropdownMenuItem> */}
                             
                             {session?.user.role === 'SUPER_ADMIN' && (
                               <>
@@ -998,6 +1000,8 @@ export default function AdminUsersPage() {
             user={selectedUser}
             open={viewModalOpen}
             onOpenChange={setViewModalOpen}
+            onLinkCompany={() => setLinkCompanyOpen(true)}
+            onOwnershipChanged={() => fetchUsers()}
           />
           <EditUserModal 
             user={selectedUser}
@@ -1013,6 +1017,15 @@ export default function AdminUsersPage() {
             user={selectedUser}
             open={passwordModalOpen}
             onOpenChange={setPasswordModalOpen}
+          />
+          <LinkUserToCompanyModal
+            userId={selectedUser.id}
+            open={linkCompanyOpen}
+            onOpenChange={setLinkCompanyOpen}
+            onLinked={() => {
+              fetchUsers()
+              setLinkCompanyOpen(false)
+            }}
           />
         </>
       )}

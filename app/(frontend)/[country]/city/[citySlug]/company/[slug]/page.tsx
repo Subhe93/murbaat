@@ -362,6 +362,7 @@ export default async function CompanyPage({
                 currentCity={company.city.slug}
                 currentCountry={company.country.code}
                 currentCompanySlug={company.slug}
+                cityName={company.city.name}
               />
               
               {similarCompanies.length > 0 && (

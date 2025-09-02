@@ -88,6 +88,9 @@ export default function AddCompany() {
     },
   });
 
+  // حالة أخطاء التحقق
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -172,6 +175,8 @@ export default function AddCompany() {
       ...prev,
       [field]: value
     }));
+    // مسح خطأ الحقل عند تغييره
+    setErrors(prev => ({ ...prev, [field]: '' }));
   };
 
   const handleSocialMediaChange = (platform: string, value: string) => {
@@ -182,10 +187,75 @@ export default function AddCompany() {
         [platform]: value
       }
     }));
+    setErrors(prev => ({ ...prev, [platform]: '' }));
+  };
+
+  // أدوات التحقق
+  const isValidEmail = (value: string) =>
+    /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i.test(value.trim());
+
+  const isValidPhone = (value: string) =>
+    /^\+?[0-9\s\-()]{7,}$/.test(value.trim());
+
+  const isValidUrl = (value: string) => {
+    if (!value) return true;
+    try {
+      const url = new URL(value.trim());
+      return ['http:', 'https:'].includes(url.protocol);
+    } catch {
+      return false;
+    }
+  };
+
+  const isValidYear = (value: string) => {
+    if (!value) return true;
+    const year = Number(value);
+    const currentYear = new Date().getFullYear();
+    return Number.isInteger(year) && year >= 1900 && year <= currentYear;
+  };
+
+  // التحقق بحسب الخطوة
+  const validateStep = (step: number) => {
+    const stepErrors: Record<string, string> = {};
+    if (step === 1) {
+      if (!formData.companyName.trim()) stepErrors.companyName = 'اسم الشركة مطلوب';
+      if (!formData.description.trim()) stepErrors.description = 'وصف الشركة مطلوب';
+      else if (formData.description.trim().length < 10) stepErrors.description = 'يجب أن يكون الوصف 10 أحرف على الأقل';
+      if (!formData.categoryId) stepErrors.categoryId = 'يرجى اختيار الفئة';
+      if (!formData.countryId) stepErrors.countryId = 'يرجى اختيار البلد';
+      if (!formData.cityId) stepErrors.cityId = 'يرجى اختيار المدينة';
+    }
+    if (step === 2) {
+      if (!formData.phone.trim()) stepErrors.phone = 'رقم الهاتف مطلوب';
+      else if (!isValidPhone(formData.phone)) stepErrors.phone = 'رقم الهاتف غير صالح';
+      if (!formData.email.trim()) stepErrors.email = 'البريد الإلكتروني مطلوب';
+      else if (!isValidEmail(formData.email)) stepErrors.email = 'البريد الإلكتروني غير صالح';
+      if (formData.website && !isValidUrl(formData.website)) stepErrors.website = 'الرابط غير صالح';
+      const { facebook, instagram, linkedin } = formData.socialMediaLinks;
+      if (facebook && !isValidUrl(facebook)) stepErrors.facebook = 'رابط فيسبوك غير صالح';
+      if (instagram && !isValidUrl(instagram)) stepErrors.instagram = 'رابط إنستغرام غير صالح';
+      if (linkedin && !isValidUrl(linkedin)) stepErrors.linkedin = 'رابط لينكدإن غير صالح';
+    }
+    if (step === 3) {
+      if (!formData.services.trim()) stepErrors.services = 'الخدمات والمنتجات مطلوبة';
+      else if (formData.services.trim().length < 10) stepErrors.services = 'يجب أن يكون وصف الخدمات 10 أحرف على الأقل';
+      if (!isValidYear(formData.foundedYear)) stepErrors.foundedYear = 'أدخل سنة صحيحة بين 1900 والآن';
+    }
+    if (step === 4) {
+      if (!formData.ownerName.trim()) stepErrors.ownerName = 'اسم المسؤول مطلوب';
+      if (!formData.ownerEmail.trim()) stepErrors.ownerEmail = 'بريد المسؤول مطلوب';
+      else if (!isValidEmail(formData.ownerEmail)) stepErrors.ownerEmail = 'بريد غير صالح';
+      if (!formData.ownerPhone.trim()) stepErrors.ownerPhone = 'هاتف المسؤول مطلوب';
+      else if (!isValidPhone(formData.ownerPhone)) stepErrors.ownerPhone = 'رقم هاتف غير صالح';
+    }
+    setErrors(prev => ({ ...prev, ...stepErrors }));
+    return Object.keys(stepErrors).length === 0;
   };
 
   const handleNext = () => {
     if (currentStep < 4) {
+      const ok = validateStep(currentStep);
+      if (!ok) return;
       setCurrentStep(currentStep + 1);
     }
   };
@@ -201,6 +271,12 @@ export default function AddCompany() {
     setIsSubmitting(true);
 
     try {
+      // تحقق نهائي لكل الخطوات قبل الإرسال
+      const allValid = [1, 2, 3, 4].every(validateStep);
+      if (!allValid) {
+        setIsSubmitting(false);
+        return;
+      }
       const response = await fetch('/api/company-requests', {
         method: 'POST',
         headers: {
@@ -301,7 +377,7 @@ export default function AddCompany() {
               {step}
             </div>
             {step < 4 && (
-              <div className={`w-16 h-1 mx-2 ${
+              <div className={`w-8 md:w-16 h-1 mx-2 ${
                 currentStep > step ? 'bg-blue-600' : 'bg-gray-200'
               }`} />
             )}
@@ -327,23 +403,31 @@ export default function AddCompany() {
           <Label htmlFor="companyName">اسم الشركة *</Label>
           <Input
             id="companyName"
+            className={errors.companyName ? 'border-red-500 focus-visible:ring-red-500' : ''}
             value={formData.companyName}
             onChange={(e) => handleInputChange('companyName', e.target.value)}
             placeholder="أدخل اسم شركتك"
             required
           />
+          {errors.companyName && (
+            <p className="text-sm text-red-600 mt-1">{errors.companyName}</p>
+          )}
         </div>
 
         <div>
           <Label htmlFor="description">وصف الشركة *</Label>
           <Textarea
             id="description"
+            className={errors.description ? 'border-red-500 focus-visible:ring-red-500' : ''}
             value={formData.description}
             onChange={(e) => handleInputChange('description', e.target.value)}
             placeholder="اكتب وصفاً موجزاً عن شركتك وأنشطتها..."
             rows={4}
             required
           />
+          {errors.description && (
+            <p className="text-sm text-red-600 mt-1">{errors.description}</p>
+          )}
         </div>
 
         <div>
@@ -373,6 +457,9 @@ export default function AddCompany() {
               )}
             </SelectContent>
           </Select>
+          {errors.categoryId && (
+            <p className="text-sm text-red-600 mt-1">{errors.categoryId}</p>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -403,6 +490,9 @@ export default function AddCompany() {
                 )}
               </SelectContent>
             </Select>
+            {errors.countryId && (
+              <p className="text-sm text-red-600 mt-1">{errors.countryId}</p>
+            )}
           </div>
 
           <div>
@@ -443,6 +533,9 @@ export default function AddCompany() {
                 )}
               </SelectContent>
             </Select>
+            {errors.cityId && (
+              <p className="text-sm text-red-600 mt-1">{errors.cityId}</p>
+            )}
           </div>
         </div>
 
@@ -476,11 +569,15 @@ export default function AddCompany() {
           <Input
             id="phone"
             type="tel"
+            className={errors.phone ? 'border-red-500 focus-visible:ring-red-500' : ''}
             value={formData.phone}
             onChange={(e) => handleInputChange('phone', e.target.value)}
             placeholder="+963 11 1234567"
             required
           />
+          {errors.phone && (
+            <p className="text-sm text-red-600 mt-1">{errors.phone}</p>
+          )}
         </div>
 
         <div>
@@ -488,11 +585,15 @@ export default function AddCompany() {
           <Input
             id="email"
             type="email"
+            className={errors.email ? 'border-red-500 focus-visible:ring-red-500' : ''}
             value={formData.email}
             onChange={(e) => handleInputChange('email', e.target.value)}
             placeholder="info@company.com"
             required
           />
+          {errors.email && (
+            <p className="text-sm text-red-600 mt-1">{errors.email}</p>
+          )}
         </div>
 
         <div>
@@ -500,10 +601,14 @@ export default function AddCompany() {
           <Input
             id="website"
             type="url"
+            className={errors.website ? 'border-red-500 focus-visible:ring-red-500' : ''}
             value={formData.website}
             onChange={(e) => handleInputChange('website', e.target.value)}
             placeholder="https://www.company.com"
           />
+          {errors.website && (
+            <p className="text-sm text-red-600 mt-1">{errors.website}</p>
+          )}
         </div>
 
         <div className="space-y-4">
@@ -513,30 +618,42 @@ export default function AddCompany() {
             <Label htmlFor="facebook" className="text-sm">Facebook</Label>
             <Input
               id="facebook"
+              className={errors.facebook ? 'border-red-500 focus-visible:ring-red-500' : ''}
               value={formData.socialMediaLinks.facebook}
               onChange={(e) => handleSocialMediaChange('facebook', e.target.value)}
               placeholder="https://facebook.com/yourcompany"
             />
+            {errors.facebook && (
+              <p className="text-sm text-red-600 mt-1">{errors.facebook}</p>
+            )}
           </div>
 
           <div>
             <Label htmlFor="instagram" className="text-sm">Instagram</Label>
             <Input
               id="instagram"
+              className={errors.instagram ? 'border-red-500 focus-visible:ring-red-500' : ''}
               value={formData.socialMediaLinks.instagram}
               onChange={(e) => handleSocialMediaChange('instagram', e.target.value)}
               placeholder="https://instagram.com/yourcompany"
             />
+            {errors.instagram && (
+              <p className="text-sm text-red-600 mt-1">{errors.instagram}</p>
+            )}
           </div>
 
           <div>
             <Label htmlFor="linkedin" className="text-sm">LinkedIn</Label>
             <Input
               id="linkedin"
+              className={errors.linkedin ? 'border-red-500 focus-visible:ring-red-500' : ''}
               value={formData.socialMediaLinks.linkedin}
               onChange={(e) => handleSocialMediaChange('linkedin', e.target.value)}
               placeholder="https://linkedin.com/company/yourcompany"
             />
+            {errors.linkedin && (
+              <p className="text-sm text-red-600 mt-1">{errors.linkedin}</p>
+            )}
           </div>
         </div>
       </CardContent>
@@ -563,10 +680,14 @@ export default function AddCompany() {
               type="number"
               min="1900"
               max={new Date().getFullYear()}
+              className={errors.foundedYear ? 'border-red-500 focus-visible:ring-red-500' : ''}
               value={formData.foundedYear}
               onChange={(e) => handleInputChange('foundedYear', e.target.value)}
               placeholder="2020"
             />
+            {errors.foundedYear && (
+              <p className="text-sm text-red-600 mt-1">{errors.foundedYear}</p>
+            )}
           </div>
 
           <div>
@@ -590,12 +711,16 @@ export default function AddCompany() {
           <Label htmlFor="services">الخدمات والمنتجات *</Label>
           <Textarea
             id="services"
+            className={errors.services ? 'border-red-500 focus-visible:ring-red-500' : ''}
             value={formData.services}
             onChange={(e) => handleInputChange('services', e.target.value)}
             placeholder="اكتب تفصيلاً عن الخدمات والمنتجات التي تقدمها شركتك..."
             rows={5}
             required
           />
+          {errors.services && (
+            <p className="text-sm text-red-600 mt-1">{errors.services}</p>
+          )}
           <p className="text-sm text-gray-500 mt-2">
             صف بالتفصيل ما تقدمه شركتك من خدمات أو منتجات. هذه المعلومات ستساعد العملاء في العثور عليك.
           </p>
@@ -620,11 +745,15 @@ export default function AddCompany() {
           <Label htmlFor="ownerName">اسم المسؤول *</Label>
           <Input
             id="ownerName"
+            className={errors.ownerName ? 'border-red-500 focus-visible:ring-red-500' : ''}
             value={formData.ownerName}
             onChange={(e) => handleInputChange('ownerName', e.target.value)}
             placeholder="الاسم الكامل للمسؤول"
             required
           />
+          {errors.ownerName && (
+            <p className="text-sm text-red-600 mt-1">{errors.ownerName}</p>
+          )}
         </div>
 
         <div>
@@ -632,11 +761,15 @@ export default function AddCompany() {
           <Input
             id="ownerEmail"
             type="email"
+            className={errors.ownerEmail ? 'border-red-500 focus-visible:ring-red-500' : ''}
             value={formData.ownerEmail}
             onChange={(e) => handleInputChange('ownerEmail', e.target.value)}
             placeholder="manager@company.com"
             required
           />
+          {errors.ownerEmail && (
+            <p className="text-sm text-red-600 mt-1">{errors.ownerEmail}</p>
+          )}
           <p className="text-sm text-gray-500 mt-1">
             سنستخدم هذا البريد للتواصل معك بخصوص حساب شركتك
           </p>
@@ -647,11 +780,15 @@ export default function AddCompany() {
           <Input
             id="ownerPhone"
             type="tel"
+            className={errors.ownerPhone ? 'border-red-500 focus-visible:ring-red-500' : ''}
             value={formData.ownerPhone}
             onChange={(e) => handleInputChange('ownerPhone', e.target.value)}
             placeholder="+963 999 123456"
             required
           />
+          {errors.ownerPhone && (
+            <p className="text-sm text-red-600 mt-1">{errors.ownerPhone}</p>
+          )}
         </div>
 
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
@@ -728,9 +865,12 @@ export default function AddCompany() {
                 type="button"
                 onClick={handleNext}
                 disabled={
-                  (currentStep === 1 && (!formData.companyName || !formData.description || !formData.categoryId || !formData.countryId || !formData.cityId)) ||
+                  (currentStep === 1 && (
+                    !formData.companyName || !formData.description || formData.description.trim().length < 10 ||
+                    !formData.categoryId || !formData.countryId || !formData.cityId
+                  )) ||
                   (currentStep === 2 && (!formData.phone || !formData.email)) ||
-                  (currentStep === 3 && !formData.services)
+                  (currentStep === 3 && (!formData.services || formData.services.trim().length < 10))
                 }
               >
                 التالي

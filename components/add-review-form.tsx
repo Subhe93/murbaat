@@ -28,13 +28,29 @@ export function AddReviewForm({ companyName, onClose, onSubmit }: AddReviewFormP
   const [userEmail, setUserEmail] = useState('');
   const [photos, setPhotos] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const isValidEmail = (value: string) =>
+    !value || /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i.test(value.trim());
+
+  const validate = () => {
+    const newErrors: Record<string, string> = {};
+    if (!rating || rating < 1 || rating > 5) newErrors.rating = 'يرجى اختيار تقييم بين 1 و 5';
+    if (!userName.trim()) newErrors.userName = 'الاسم مطلوب';
+    else if (userName.trim().length < 2) newErrors.userName = 'الاسم يجب أن يكون حرفين على الأقل';
+    if (!title.trim()) newErrors.title = 'عنوان التقييم مطلوب';
+    else if (title.trim().length < 5) newErrors.title = 'العنوان يجب أن يكون 5 أحرف على الأقل';
+    if (!comment.trim()) newErrors.comment = 'تفاصيل التقييم مطلوبة';
+    else if (comment.trim().length < 10) newErrors.comment = 'التفاصيل يجب أن تكون 10 أحرف على الأقل';
+    else if (comment.trim().length > 500) newErrors.comment = 'التفاصيل يجب ألا تتجاوز 500 حرف';
+    if (!isValidEmail(userEmail)) newErrors.userEmail = 'صيغة البريد الإلكتروني غير صحيحة';
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!rating || !title || !comment || !userName) {
-      alert('يرجى ملء جميع الحقول المطلوبة');
-      return;
-    }
+    if (!validate()) return;
 
     setIsSubmitting(true);
     
@@ -131,6 +147,12 @@ export function AddReviewForm({ companyName, onClose, onSubmit }: AddReviewFormP
             <p className="text-sm text-gray-600 dark:text-gray-400">
               {getRatingText(hoverRating || rating)}
             </p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              اختر عدد النجوم التي تعكس تجربتك العامة مع الشركة.
+            </p>
+            {errors.rating && (
+              <p className="text-sm text-red-600 mt-1">{errors.rating}</p>
+            )}
           </div>
 
           {/* User Info */}
@@ -145,11 +167,17 @@ export function AddReviewForm({ companyName, onClose, onSubmit }: AddReviewFormP
                   type="text"
                   value={userName}
                   onChange={(e) => setUserName(e.target.value)}
-                  className="w-full pr-12 pl-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={`w-full pr-12 pl-4 py-3 border rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 ${errors.userName ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 dark:border-gray-600 focus:ring-blue-500'}`}
                   placeholder="اسمك الكامل"
                   required
                 />
               </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                اكتب اسمك الحقيقي أو اسمًا مستعارًا واضحًا (حرفان على الأقل).
+              </p>
+              {errors.userName && (
+                <p className="text-sm text-red-600 mt-1">{errors.userName}</p>
+              )}
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-900 dark:text-white mb-2">
@@ -159,9 +187,15 @@ export function AddReviewForm({ companyName, onClose, onSubmit }: AddReviewFormP
                 type="email"
                 value={userEmail}
                 onChange={(e) => setUserEmail(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={`w-full px-4 py-3 border rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 ${errors.userEmail ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 dark:border-gray-600 focus:ring-blue-500'}`}
                 placeholder="email@example.com"
               />
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                اختياري: لن نعرض بريدك علنًا، نستخدمه للتحقق فقط.
+              </p>
+              {errors.userEmail && (
+                <p className="text-sm text-red-600 mt-1">{errors.userEmail}</p>
+              )}
             </div>
           </div>
 
@@ -174,10 +208,16 @@ export function AddReviewForm({ companyName, onClose, onSubmit }: AddReviewFormP
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={`w-full px-4 py-3 border rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 ${errors.title ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 dark:border-gray-600 focus:ring-blue-500'}`}
               placeholder="مثال: خدمة ممتازة وفريق محترف"
               required
             />
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              خلاصة قصيرة لتجربتك (5 أحرف على الأقل).
+            </p>
+            {errors.title && (
+              <p className="text-sm text-red-600 mt-1">{errors.title}</p>
+            )}
           </div>
 
           {/* Review Comment */}
@@ -191,7 +231,7 @@ export function AddReviewForm({ companyName, onClose, onSubmit }: AddReviewFormP
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
                 rows={4}
-                className="w-full pr-12 pl-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                className={`w-full pr-12 pl-4 py-3 border rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 resize-none ${errors.comment ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 dark:border-gray-600 focus:ring-blue-500'}`}
                 placeholder="شارك تجربتك مع هذه الشركة بالتفصيل..."
                 required
               />
@@ -199,6 +239,12 @@ export function AddReviewForm({ companyName, onClose, onSubmit }: AddReviewFormP
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
               {comment.length}/500 حرف
             </p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              قدم تفاصيل محددة (10–500 حرف) تساعد الآخرين على الاستفادة من تقييمك.
+            </p>
+            {errors.comment && (
+              <p className="text-sm text-red-600 mt-1">{errors.comment}</p>
+            )}
           </div>
 
           {/* Photo Upload */}
@@ -271,7 +317,14 @@ export function AddReviewForm({ companyName, onClose, onSubmit }: AddReviewFormP
             </Button>
             <Button
               type="submit"
-              disabled={isSubmitting || !rating || !title || !comment || !userName}
+              disabled={
+                isSubmitting ||
+                !rating || rating < 1 || rating > 5 ||
+                !userName.trim() || userName.trim().length < 2 ||
+                !title.trim() || title.trim().length < 5 ||
+                !comment.trim() || comment.trim().length < 10 || comment.trim().length > 500 ||
+                (!!userEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i.test(userEmail.trim()))
+              }
               className="bg-green-600 hover:bg-green-700 text-white px-8"
             >
               {isSubmitting ? (

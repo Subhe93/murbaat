@@ -46,15 +46,18 @@ interface ViewUserModalProps {
   user: User
   open?: boolean
   onOpenChange?: (open: boolean) => void
+  onLinkCompany?: (userId: string) => void
+  onOwnershipChanged?: () => void
 }
 
-export function ViewUserModal({ user, open, onOpenChange }: ViewUserModalProps) {
+export function ViewUserModal({ user, open, onOpenChange, onLinkCompany, onOwnershipChanged }: ViewUserModalProps) {
   const [internalOpen, setInternalOpen] = useState(false)
   const isControlled = open !== undefined
   const modalOpen = isControlled ? open : internalOpen
   const setModalOpen = isControlled ? onOpenChange! : setInternalOpen
   const [isLoading, setIsLoading] = useState(false)
   const [userDetails, setUserDetails] = useState<any>(null)
+  const [unlinkingCompanyId, setUnlinkingCompanyId] = useState<string | null>(null)
 
   useEffect(() => {
     if (modalOpen && !userDetails) {
@@ -74,6 +77,32 @@ export function ViewUserModal({ user, open, onOpenChange }: ViewUserModalProps) 
       console.error('خطأ في جلب تفاصيل المستخدم:', error)
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const handleUnlink = async (companyId: string) => {
+    try {
+      if (typeof window !== 'undefined') {
+        const confirmed = window.confirm('هل تريد بالتأكيد إلغاء ربط هذا المستخدم بالشركة؟')
+        if (!confirmed) return
+      }
+      setUnlinkingCompanyId(companyId)
+      const res = await fetch(`/api/admin/users/${user.id}/companies?companyId=${companyId}`, { method: 'DELETE' })
+      if (res.ok) {
+        // تحديث العرض الحالي دون إعادة التحميل
+        setUserDetails((prev: any) => {
+          if (!prev) return prev
+          return {
+            ...prev,
+            ownedCompanies: (prev.ownedCompanies || []).filter((oc: any) => oc.companyId !== companyId && oc.company?.id !== companyId)
+          }
+        })
+        onOwnershipChanged?.()
+      }
+    } catch (e) {
+      console.error('خطأ في إلغاء الربط:', e)
+    } finally {
+      setUnlinkingCompanyId(null)
     }
   }
 
@@ -261,33 +290,42 @@ export function ViewUserModal({ user, open, onOpenChange }: ViewUserModalProps) 
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {user.ownedCompanies.map((ownership) => (
+                  {(userDetails?.ownedCompanies || user.ownedCompanies).map((ownership: any) => (
                     <div key={ownership.id} className="flex items-center justify-between p-3 border rounded-lg">
                       <div className="flex items-center gap-3">
                         <Building2 className="h-8 w-8 text-gray-400" />
                         <div>
-                          <div className="font-medium">{ownership.company.name}</div>
-                          <div className="text-sm text-gray-500">/{ownership.company.slug}</div>
+                          <div className="font-medium">{ownership.company?.name}</div>
+                          <div className="text-sm text-gray-500">/{ownership.company?.slug}</div>
                         </div>
                       </div>
                       
                       <div className="flex items-center gap-2">
-                        {ownership.company.rating && (
+                        {ownership.company?.rating && (
                           <Badge variant="outline" className="text-xs">
-                            ⭐ {ownership.company.rating}
+                            ⭐ {ownership.company?.rating}
                           </Badge>
                         )}
                         
-                        {ownership.company.isVerified && (
+                        {ownership.company?.isVerified && (
                           <Badge variant="secondary" className="text-xs">
                             <Award className="h-3 w-3 ml-1" />
                             موثقة
                           </Badge>
                         )}
                         
-                        <Badge variant={ownership.company.isActive ? 'default' : 'secondary'} className="text-xs">
-                          {ownership.company.isActive ? 'نشطة' : 'غير نشطة'}
+                        <Badge variant={ownership.company?.isActive ? 'default' : 'secondary'} className="text-xs">
+                          {ownership.company?.isActive ? 'نشطة' : 'غير نشطة'}
                         </Badge>
+
+                        <Button 
+                          variant="outline" 
+                          className="text-red-600 border-red-200"
+                          disabled={unlinkingCompanyId === (ownership.companyId || ownership.company?.id)}
+                          onClick={() => handleUnlink(ownership.companyId || ownership.company?.id)}
+                        >
+                          {unlinkingCompanyId === (ownership.companyId || ownership.company?.id) ? 'جارٍ الإزالة...' : 'إلغاء الربط'}
+                        </Button>
                       </div>
                     </div>
                   ))}
@@ -351,6 +389,12 @@ export function ViewUserModal({ user, open, onOpenChange }: ViewUserModalProps) 
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
             </div>
+          )}
+        </div>
+        <div className="mt-4 flex justify-end gap-2">
+          <Button variant="outline" onClick={() => setModalOpen(false)}>إغلاق</Button>
+          {onLinkCompany && (
+            <Button onClick={() => onLinkCompany(user.id)}>ربط بشركة</Button>
           )}
         </div>
       </DialogContent>
