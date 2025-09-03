@@ -159,13 +159,13 @@ export default function SignInPage() {
             </div>
 
             {/* بيانات تجريبية للاختبار */}
-            <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+            {/* <div className="mt-6 p-4 bg-gray-50 rounded-lg">
               <h4 className="text-sm font-medium text-gray-900 mb-2">بيانات تجريبية للاختبار:</h4>
               <div className="text-xs text-gray-600 space-y-1">
                 <p><strong>مدير النظام:</strong> admin@morabbat.com</p>
                 <p><strong>كلمة المرور:</strong> admin123</p>
               </div>
-            </div>
+            </div> */}
           </CardContent>
         </Card>
 
