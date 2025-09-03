@@ -899,7 +899,7 @@ export default function AdminUsersPage() {
                               <Edit className="h-4 w-4 ml-2" />
                               تعديل المستخدم
                             </DropdownMenuItem>
-                            {user.id !== session?.user.id && (
+                            {/* {user.id !== session?.user.id && ( */}
                               <DropdownMenuItem 
                                 className="cursor-pointer"
                                 onClick={() => handleChangePassword(user.id)}
@@ -907,7 +907,7 @@ export default function AdminUsersPage() {
                                 <Lock className="h-4 w-4 ml-2" />
                                 تغيير كلمة المرور
                               </DropdownMenuItem>
-                            )}
+                            {/* )} */}
                             {/* <DropdownMenuItem>
                               <Mail className="h-4 w-4 ml-2" />
                               إرسال رسالة
