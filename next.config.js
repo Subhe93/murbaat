@@ -18,8 +18,8 @@ const nextConfig = {
     // domains: [
     //   "images.pexels.com",
     //   "localhost",
-    //   "morabaat.com",
-    //   "cdn.morabaat.com",
+    //   "murabaat.com",
+    //   "cdn.murabaat.com",
     //   "images.example.com",
     //   "murabaat.iwings-digital.com",
     // ],

@@ -55,7 +55,7 @@ export async function generateMetadata({
       };
     }
 
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://morabaat.com';
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://murabaat.com';
     const categoryUrl = `${baseUrl}/${params.country}/category/${params.category}`;
 
     return {

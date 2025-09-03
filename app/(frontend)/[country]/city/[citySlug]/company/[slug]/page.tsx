@@ -92,7 +92,7 @@ export async function generateMetadata({
       };
     }
 
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://morabaat.com';
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://murabaat.com';
     const companyUrl = `${baseUrl}/${company.country.code}/city/${company.city.slug}/company/${company.slug}`;
 
     return {
@@ -114,7 +114,8 @@ export async function generateMetadata({
         siteName: 'مربعات - دليل الشركات',
         images: company.mainImage ? [
           {
-            url: company.mainImage,
+            url: baseUrl +
+              "/upload/"+company.mainImage, 
             width: 1200,
             height: 630,
             alt: `صورة شركة ${company.name}`,
@@ -128,7 +129,8 @@ export async function generateMetadata({
         card: 'summary_large_image',
         title: `${company.name} - ${company.category.name}`,
         description: company.shortDescription || `${company.name} في ${company.city.name}`,
-        images: company.mainImage ? [company.mainImage] : [],
+        images: company.mainImage ? [baseUrl +
+              "/upload/"+company.mainImage] : [],
       },
 
       alternates: {
@@ -230,6 +232,8 @@ export default async function CompanyPage({
       actualReviews: company.reviews.length,
       approvedReviews: company.reviews.filter(r => r.isApproved).length
     });
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://murabaat.com';
+    const baseUrlImage = baseUrl + "/upload/";
 
     // JSON-LD Schema للشركة (SEO)
     const jsonLd = {
@@ -237,7 +241,8 @@ export default async function CompanyPage({
       "@type": "LocalBusiness",
       "name": company.name,
       "description": company.description,
-      "image": company.mainImage,
+      "image": baseUrlImage +
+                company.mainImage, 
       "url": company.website,
       "telephone": company.phone,
       "email": company.email,

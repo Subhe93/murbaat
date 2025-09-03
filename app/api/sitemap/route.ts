@@ -1,9 +1,9 @@
-import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 
 export async function GET() {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://morabaat.com'
-  
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://murabaat.com";
+
   try {
     // جلب البيانات للـ sitemap
     const [countries, categories, companies] = await Promise.all([
@@ -19,22 +19,22 @@ export async function GET() {
       }),
       prisma.company.findMany({
         where: { isActive: true },
-        select: { 
-          slug: true, 
+        select: {
+          slug: true,
           updatedAt: true,
           city: {
             select: {
               slug: true,
               country: {
-                select: { code: true }
-              }
-            }
-          }
+                select: { code: true },
+              },
+            },
+          },
         },
         take: 1000, // محدود للأداء
-        orderBy: { updatedAt: 'desc' },
+        orderBy: { updatedAt: "desc" },
       }),
-    ])
+    ]);
 
     // إنشاء XML sitemap
     const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
@@ -57,31 +57,45 @@ export async function GET() {
   </url>
   
   <!-- صفحات البلدان -->
-  ${countries.map(country => `
+  ${countries
+    .map(
+      (country) => `
   <url>
     <loc>${baseUrl}/${country.code}</loc>
     <lastmod>${country.updatedAt.toISOString()}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
-  </url>`).join('')}
+  </url>`
+    )
+    .join("")}
   
   <!-- صفحات الفئات -->
-  ${categories.map(category => `
+  ${categories
+    .map(
+      (category) => `
   <url>
     <loc>${baseUrl}/category/${category.slug}</loc>
     <lastmod>${category.updatedAt.toISOString()}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
-  </url>`).join('')}
+  </url>`
+    )
+    .join("")}
   
   <!-- صفحات الشركات -->
-  ${companies.map(company => `
+  ${companies
+    .map(
+      (company) => `
   <url>
-    <loc>${baseUrl}/${company.city.country.code}/city/${company.city.slug}/company/${company.slug}</loc>
+    <loc>${baseUrl}/${company.city.country.code}/city/${
+        company.city.slug
+      }/company/${company.slug}</loc>
     <lastmod>${company.updatedAt.toISOString()}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
-  </url>`).join('')}
+  </url>`
+    )
+    .join("")}
   
   <!-- صفحات ثابتة -->
   <url>
@@ -105,18 +119,17 @@ export async function GET() {
     <priority>0.3</priority>
   </url>
   
-</urlset>`
+</urlset>`;
 
     return new NextResponse(sitemap, {
       headers: {
-        'Content-Type': 'application/xml',
-        'Cache-Control': 'public, max-age=86400', // 24 hours
+        "Content-Type": "application/xml",
+        "Cache-Control": "public, max-age=86400", // 24 hours
       },
-    })
-
+    });
   } catch (error) {
-    console.error('خطأ في إنشاء sitemap:', error)
-    
+    console.error("خطأ في إنشاء sitemap:", error);
+
     // sitemap أساسي في حالة الخطأ
     const basicSitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -126,13 +139,13 @@ export async function GET() {
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
-</urlset>`
+</urlset>`;
 
     return new NextResponse(basicSitemap, {
       headers: {
-        'Content-Type': 'application/xml',
-        'Cache-Control': 'public, max-age=3600', // 1 hour
+        "Content-Type": "application/xml",
+        "Cache-Control": "public, max-age=3600", // 1 hour
       },
-    })
+    });
   }
 }
