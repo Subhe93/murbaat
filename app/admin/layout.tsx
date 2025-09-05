@@ -23,8 +23,9 @@ export default function AdminLayout({
             {children}
           </div>
         </main>
+         <Toaster />
       </div>
-      <Toaster />
+     
     </div>
   )
 }

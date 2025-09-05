@@ -51,7 +51,7 @@ export function ReportReviewForm({ reviewId, reviewTitle, onClose, onSubmit }: R
 
       const result = await response.json();
 
-      if (result.success) {
+      if (response.ok) {
         onSubmit(result.data);
         alert('تم إرسال البلاغ بنجاح. شكراً لك على المساعدة في تحسين جودة المحتوى.');
         onClose();
@@ -68,9 +68,9 @@ export function ReportReviewForm({ reviewId, reviewTitle, onClose, onSubmit }: R
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-600">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-600 flex-shrink-0">
           <div className="flex items-center space-x-3 space-x-reverse">
             <Flag className="h-5 w-5 text-red-500" />
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">
@@ -87,7 +87,7 @@ export function ReportReviewForm({ reviewId, reviewTitle, onClose, onSubmit }: R
           </Button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto">
           {/* Review Info */}
           <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
             <h4 className="font-medium text-gray-900 dark:text-white mb-1">

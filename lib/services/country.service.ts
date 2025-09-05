@@ -99,11 +99,16 @@ export const getCountryByCode = cache(
           flag: true,
           image: true,
           description: true,
-          companiesCount: true,
+          _count: { select: { companies: { where: { isActive: true } } } },
         },
       });
 
-      return country;
+      if (!country) return null;
+
+      return {
+        ...country,
+        companiesCount: country._count.companies,
+      };
     } catch (error) {
       console.error("خطأ في جلب بيانات البلد:", error);
       return null;
@@ -126,12 +131,15 @@ export const getCountryCities = cache(
           name: true,
           image: true,
           description: true,
-          companiesCount: true,
+          _count: { select: { companies: { where: { isActive: true } } } },
         },
-        orderBy: [{ companiesCount: "desc" }, { name: "asc" }],
+        orderBy: [{ companies: { _count: "desc" } }, { name: "asc" }],
       });
 
-      return cities;
+      return cities.map(city => ({
+        ...city,
+        companiesCount: city._count.companies,
+      }));
     } catch (error) {
       console.error("خطأ في جلب مدن البلد:", error);
       return [];

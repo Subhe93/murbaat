@@ -58,7 +58,7 @@ const getNavigation = (stats: DashboardStats) => [
     children: [
       { name: 'جميع المراجعات', href: '/admin/reviews', icon: Eye },
       { name: 'في الانتظار', href: '/admin/reviews/pending', icon: FileText, badge: stats.pendingReviews.toString() },
-      // { name: 'المراجعات المبلغ عنها', href: '/admin/reviews/reported', icon: Shield, badge: stats.reportedReviews.toString() },
+      { name: 'البلاغات', href: '/admin/reports', icon: Shield, badge: stats.reportedReviews.toString() },
     ]
   },
   {
@@ -150,26 +150,26 @@ export function AdminSidebar() {
             })
           }
         } else {
-          // fallback للقيم الافتراضية
+          // fallback to zeros
           setStats({
-            pendingReviews: 23,
-            totalCompanies: 450,
-            totalUsers: 1234,
-            pendingRequests: 12,
-            reportedReviews: 5,
-            notifications: 7
+            pendingReviews: 0,
+            totalCompanies: 0,
+            totalUsers: 0,
+            pendingRequests: 0,
+            reportedReviews: 0,
+            notifications: 0
           })
         }
       } catch (error) {
         console.error('خطأ في جلب الإحصائيات:', error)
-        // إعدادات افتراضية في حالة الخطأ
+        // Set to zero in case of error
         setStats({
-          pendingReviews: 23,
-          totalCompanies: 450,
-          totalUsers: 1234,
-          pendingRequests: 12,
-          reportedReviews: 5,
-          notifications: 7
+          pendingReviews: 0,
+          totalCompanies: 0,
+          totalUsers: 0,
+          pendingRequests: 0,
+          reportedReviews: 0,
+          notifications: 0
         })
       }
     }

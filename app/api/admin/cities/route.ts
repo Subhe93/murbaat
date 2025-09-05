@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { name, slug, countryId, image, description, isActive } = body
+    const { name, slug, countryId, image, description, isActive, companiesCount } = body
 
     if (!name || !slug || !countryId) {
       return NextResponse.json({ error: 'الاسم والمعرف والبلد مطلوبة' }, { status: 400 })
@@ -95,22 +95,17 @@ export async function POST(request: NextRequest) {
         name,
         slug: slug.toLowerCase(),
         countryId,
+        countryCode: country.code,
         image: image || null,
         description: description || null,
-        isActive: isActive !== undefined ? isActive : true
+        isActive: isActive !== undefined ? isActive : true,
+        companiesCount: companiesCount || 0
       },
       include: {
         country: {
           select: {
             name: true,
             code: true
-          }
-        },
-        _count: {
-          select: {
-            companies: {
-              where: { isActive: true }
-            }
           }
         }
       }
@@ -124,7 +119,7 @@ export async function POST(request: NextRequest) {
       countryCode: city.country.code,
       image: city.image,
       description: city.description,
-      companiesCount: city._count.companies,
+      companiesCount: city.companiesCount,
       isActive: city.isActive,
       createdAt: city.createdAt.toISOString(),
       country: city.country

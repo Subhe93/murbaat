@@ -182,7 +182,7 @@ export function AdvancedSearchFilters({
           فلاتر متقدمة
         </Button>
         
-        {showHoursFilter && (
+        {/* {showHoursFilter && (
           <Button
             variant={openNow ? "default" : "outline"}
             size="sm"
@@ -192,7 +192,7 @@ export function AdvancedSearchFilters({
             <Clock className="h-4 w-4 ml-2" />
             مفتوح الآن
           </Button>
-        )}
+        )} */}
 
         {selectedRating && (
           <Badge variant="secondary" className="flex items-center">

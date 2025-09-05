@@ -1,10 +1,10 @@
-export const dynamic = "force-dynamic";
-
 import Image from 'next/image';
+import Link from 'next/link';
 import { Star, MapPin, Phone, Globe, Mail, Clock, Users, CheckCircle, Facebook, Twitter, Instagram, Linkedin, Share2, Navigation } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Company } from '@/lib/data';
+import { ShareButton } from './share-button';
 
 interface CompanyHeaderProps {
   company: Company;
@@ -65,6 +65,7 @@ const getCountryFlag = (countryCode: string) => {
 };
 
 export function CompanyHeader({ company }: CompanyHeaderProps) {
+  const address = company.address || `${company.name}, ${company.city}, ${company.country}`;
   // Debug: Check if rating matches actual reviews
   const hasRatingDiscrepancy = company.rating > 0 && company.reviewsCount === 0;
   
@@ -132,55 +133,43 @@ export function CompanyHeader({ company }: CompanyHeaderProps) {
 
               <div className="flex flex-wrap gap-3 mb-8">
                 {company.tags.slice(0, 4).map((tag) => (
-                  <button key={tag}>
+                  <Link key={tag} href={`/search?tag=${encodeURIComponent(tag)}`}>
                     <Badge 
                       className="bg-blue-500/80 hover:bg-blue-500 text-white border-blue-400/50 backdrop-blur-sm px-3 py-1 text-sm font-medium cursor-pointer transition-all duration-300 hover:scale-105"
                     >
                       {tag}
                     </Badge>
-                  </button>
+                  </Link>
                 ))}
               </div>
 
               <div className="flex flex-wrap gap-4">
                 {company.phone && (
-                  <Button 
-                    size="lg"
-                    className="bg-green-600 hover:bg-green-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 px-6 py-3"
-                  >
-                    <Phone className="h-5 w-5 ml-2" />
-                    اتصل الآن
+                  <Button asChild size="lg" className="bg-green-600 hover:bg-green-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 px-6 py-3">
+                    <a href={`tel:${company.phone}`}>
+                      <Phone className="h-5 w-5 ml-2" />
+                      اتصل الآن
+                    </a>
                   </Button>
                 )}
                 
-                <Button 
-                  variant="outline" 
-                  size="lg"
-                  className="bg-white/20 backdrop-blur-md hover:bg-white/30 text-white border-white/40 hover:border-white/60 shadow-lg transition-all duration-300 px-6 py-3"
-                >
-                  <Navigation className="h-5 w-5 ml-2" />
-                  الاتجاهات
+                <Button asChild variant="outline" size="lg" className="bg-white/20 backdrop-blur-md hover:bg-white/30 text-white border-white/40 hover:border-white/60 shadow-lg transition-all duration-300 px-6 py-3">
+                  <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`} target="_blank" rel="noopener noreferrer">
+                    <Navigation className="h-5 w-5 ml-2" />
+                    الاتجاهات
+                  </a>
                 </Button>
                 
                 {company.website && (
-                  <Button 
-                    variant="outline" 
-                    size="lg"
-                    className="bg-white/20 backdrop-blur-md hover:bg-white/30 text-white border-white/40 hover:border-white/60 shadow-lg transition-all duration-300 px-6 py-3"
-                  >
-                    <Globe className="h-5 w-5 ml-2" />
-                    زيارة الموقع
+                  <Button asChild variant="outline" size="lg" className="bg-white/20 backdrop-blur-md hover:bg-white/30 text-white border-white/40 hover:border-white/60 shadow-lg transition-all duration-300 px-6 py-3">
+                    <a href={company.website} target="_blank" rel="noopener noreferrer">
+                      <Globe className="h-5 w-5 ml-2" />
+                      زيارة الموقع
+                    </a>
                   </Button>
                 )}
                 
-                <Button 
-                  variant="outline" 
-                  size="lg"
-                  className="bg-white/20 backdrop-blur-md hover:bg-white/30 text-white border-white/40 hover:border-white/60 shadow-lg transition-all duration-300 px-6 py-3"
-                >
-                  <Share2 className="h-5 w-5 ml-2" />
-                  مشاركة
-                </Button>
+                <ShareButton companyName={company.name} companyDescription={company.description} />
               </div>
             </div>
           </div>
@@ -290,11 +279,11 @@ export function CompanyHeader({ company }: CompanyHeaderProps) {
           {/* Tags */}
           <div className="flex flex-wrap gap-2 mb-4">
             {company.tags.slice(0, 3).map((tag) => (
-              <button key={tag}>
+              <Link key={tag} href={`/search?tag=${encodeURIComponent(tag)}`}>
                 <Badge variant="secondary" className="text-xs px-2 py-1 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
                   {tag}
                 </Badge>
-              </button>
+              </Link>
             ))}
           </div>
         </div>
@@ -321,23 +310,29 @@ export function CompanyHeader({ company }: CompanyHeaderProps) {
         {/* Action Buttons */}
         <div className="space-y-3">
           {company.phone && (
-            <Button className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl shadow-lg">
-              <Phone className="h-5 w-5 ml-2" />
-              اتصل الآن
+            <Button asChild className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl shadow-lg">
+              <a href={`tel:${company.phone}`}>
+                <Phone className="h-5 w-5 ml-2" />
+                اتصل الآن
+              </a>
             </Button>
           )}
           
           <div className="grid grid-cols-2 gap-3">
             {company.website && (
-              <Button variant="outline" className="py-3 rounded-xl">
-                <Globe className="h-4 w-4 ml-2" />
-                الموقع
+              <Button asChild variant="outline" className="py-3 rounded-xl">
+                <a href={company.website} target="_blank" rel="noopener noreferrer">
+                  <Globe className="h-4 w-4 ml-2" />
+                  الموقع
+                </a>
               </Button>
             )}
             {company.email && (
-              <Button variant="outline" className="py-3 rounded-xl">
-                <Mail className="h-4 w-4 ml-2" />
-                راسلنا
+              <Button asChild variant="outline" className="py-3 rounded-xl">
+                <a href={`mailto:${company.email}`}>
+                  <Mail className="h-4 w-4 ml-2" />
+                  راسلنا
+                </a>
               </Button>
             )}
           </div>

@@ -230,6 +230,7 @@ model Review {
   images          ReviewImage[]
   ratings         ReviewRating[]
   replies         ReviewReply[]
+  reports         ReviewReport[]
 
   @@index([companyId])
   @@index([rating])
@@ -287,6 +288,23 @@ model ReviewReply {
   @@index([reviewId])
   @@index([userId])
   @@map("review_replies")
+}
+
+model ReviewReport {
+  id            String       @id @default(cuid())
+  reviewId      String
+  reason        ReportReason
+  description   String
+  reporterEmail String?
+  status        ReportStatus @default(PENDING)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  review        Review       @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  @@index([reviewId])
+  @@index([status])
+  @@map("review_reports")
 }
 
 // جدول الجوائز
@@ -433,14 +451,14 @@ model Notification {
   title       String    // عنوان الإشعار
   message     String    // رسالة الإشعار
   isRead      Boolean   @default(false) // هل تم قراءة الإشعار
-  companyId   String    // معرف الشركة
+  companyId   String?    // معرف الشركة
   userId      String?   // معرف المستخدم (اختياري)
   data        Json?     // بيانات إضافية
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
   // العلاقات
-  company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company     Company?   @relation(fields: [companyId], references: [id], onDelete: Cascade)
   user        User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([companyId])
@@ -540,4 +558,19 @@ enum DayOfWeek {
   THURSDAY
   FRIDAY
   SATURDAY
+}
+
+enum ReportReason {
+  SPAM
+  INAPPROPRIATE_LANGUAGE
+  FAKE_REVIEW
+  HARASSMENT
+  COPYRIGHT_VIOLATION
+  OTHER
+}
+
+enum ReportStatus {
+  PENDING
+  RESOLVED
+  DISMISSED
 }

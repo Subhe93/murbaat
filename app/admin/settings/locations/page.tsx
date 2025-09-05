@@ -3,10 +3,10 @@
 import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { 
-  Plus, 
-  Search, 
-  Edit, 
+import {
+  Plus,
+  Search,
+  Edit,
   Trash2,
   MapPin,
   Building2,
@@ -56,7 +56,7 @@ import {
 import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ImageUpload } from '@/components/admin/image-upload'
-import { toast } from 'sonner'
+import { useToast } from '@/hooks/use-toast'
 
 interface Country {
   id: string
@@ -104,11 +104,13 @@ export default function AdminLocationsPage() {
     image: '',
     description: '',
     countryId: '',
-    isActive: true
+    isActive: true,
+    companiesCount: 0
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { data: session, status } = useSession()
   const router = useRouter()
+  const { toast } = useToast()
 
   useEffect(() => {
     if (status === 'loading') return
@@ -146,9 +148,10 @@ export default function AdminLocationsPage() {
         console.error('فشل في جلب البلدان:', countriesResponse.status)
         setCountries([])
         errorCount++
-        toast.error('فشل في تحميل البلدان', {
+        toast({
+          variant: 'destructive',
+          title: 'فشل في تحميل البلدان',
           description: `رمز الخطأ: ${countriesResponse.status}. يرجى المحاولة مرة أخرى.`,
-          duration: 4000,
         })
       }
 
@@ -161,17 +164,18 @@ export default function AdminLocationsPage() {
         console.error('فشل في جلب المدن:', citiesResponse.status)
         setCities([])
         errorCount++
-        toast.error('فشل في تحميل المدن', {
+        toast({
+          variant: 'destructive',
+          title: 'فشل في تحميل المدن',
           description: `رمز الخطأ: ${citiesResponse.status}. يرجى المحاولة مرة أخرى.`,
-          duration: 4000,
         })
       }
 
       // إظهار إشعار النجاح إذا تم تحميل البيانات بنجاح
       if (successCount === 2) {
-        toast.success('تم تحميل البيانات بنجاح', {
+        toast({
+          title: 'تم تحميل البيانات بنجاح',
           description: `تم تحميل ${countriesCount} بلد و ${citiesCount} مدينة`,
-          duration: 3000,
         })
       }
 
@@ -179,9 +183,10 @@ export default function AdminLocationsPage() {
       console.error('خطأ في جلب المواقع:', error)
       setCountries([])
       setCities([])
-      toast.error('خطأ في الاتصال بالخادم', {
+      toast({
+        variant: 'destructive',
+        title: 'خطأ في الاتصال بالخادم',
         description: 'تعذر الاتصال بالخادم. يرجى التحقق من اتصالك بالإنترنت والمحاولة مرة أخرى.',
-        duration: 5000,
       })
     } finally {
       setIsLoading(false)
@@ -203,7 +208,8 @@ export default function AdminLocationsPage() {
       image: '',
       description: '',
       countryId: '',
-      isActive: true
+      isActive: true,
+      companiesCount: 0
     })
     setEditingItem(null)
   }
@@ -225,7 +231,8 @@ export default function AdminLocationsPage() {
         image: country.image || '',
         description: country.description || '',
         countryId: '',
-        isActive: country.isActive
+        isActive: country.isActive,
+        companiesCount: country.companiesCount
       })
     } else {
       const city = item as City
@@ -237,7 +244,8 @@ export default function AdminLocationsPage() {
         image: city.image || '',
         description: city.description || '',
         countryId: city.countryId,
-        isActive: city.isActive
+        isActive: city.isActive,
+        companiesCount: city.companiesCount
       })
     }
     setEditingItem(item)
@@ -257,12 +265,18 @@ export default function AdminLocationsPage() {
       const action = editingItem ? 'تحديث' : 'إضافة'
       const itemType = dialogType === 'country' ? 'البلد' : 'المدينة'
 
+      const body = { ...formData }
+      if (typeof body.companiesCount === 'string') {
+        body.companiesCount = parseInt(body.companiesCount, 10)
+      }
+
+
       const response = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(body),
       })
 
       if (response.ok) {
@@ -291,9 +305,9 @@ export default function AdminLocationsPage() {
         }
         
         // إشعار نجاح مفصل
-        toast.success(`تم ${action} ${itemType} بنجاح`, {
+        toast({
+          title: `تم ${action} ${itemType} بنجاح`,
           description: `${itemType} "${formData.name}" تم ${action}ه بنجاح وهو الآن ${formData.isActive ? 'نشط' : 'غير نشط'}.`,
-          duration: 4000,
         })
         
         setIsDialogOpen(false)
@@ -324,9 +338,10 @@ export default function AdminLocationsPage() {
             errorDescription = `رمز الخطأ: ${response.status}. ${errorData.error || 'يرجى المحاولة مرة أخرى.'}`
         }
 
-        toast.error(errorMessage, {
+        toast({
+          variant: 'destructive',
+          title: errorMessage,
           description: errorDescription,
-          duration: 5000,
         })
       }
     } catch (error) {
@@ -334,9 +349,10 @@ export default function AdminLocationsPage() {
       const itemType = dialogType === 'country' ? 'البلد' : 'المدينة'
       const action = editingItem ? 'تحديث' : 'إضافة'
       
-      toast.error(`خطأ في ${action} ${itemType}`, {
+      toast({
+        variant: 'destructive',
+        title: `خطأ في ${action} ${itemType}`,
         description: 'تعذر الاتصال بالخادم. يرجى التحقق من اتصالك بالإنترنت والمحاولة مرة أخرى.',
-        duration: 5000,
       })
     } finally {
       setIsSubmitting(false)
@@ -361,9 +377,9 @@ export default function AdminLocationsPage() {
           setCities(prev => prev.filter(city => city.id !== id))
         }
 
-        toast.success(`تم حذف ${itemType} بنجاح`, {
+        toast({
+          title: `تم حذف ${itemType} بنجاح`,
           description: `${itemType} "${item?.name || 'غير معروف'}" تم حذفه نهائياً من النظام.`,
-          duration: 4000,
         })
       } else {
         const errorData = await response.json()
@@ -386,18 +402,20 @@ export default function AdminLocationsPage() {
             errorDescription = errorData.error || 'حدث خطأ غير متوقع.'
         }
 
-        toast.error(`فشل في حذف ${itemType}`, {
+        toast({
+          variant: 'destructive',
+          title: `فشل في حذف ${itemType}`,
           description: errorDescription,
-          duration: 5000,
         })
       }
     } catch (error) {
       console.error('خطأ في حذف الموقع:', error)
       const itemType = type === 'country' ? 'البلد' : 'المدينة'
       
-      toast.error(`خطأ في حذف ${itemType}`, {
+      toast({
+        variant: 'destructive',
+        title: `خطأ في حذف ${itemType}`,
         description: 'تعذر الاتصال بالخادم. يرجى المحاولة مرة أخرى.',
-        duration: 5000,
       })
     }
   }
@@ -433,15 +451,16 @@ export default function AdminLocationsPage() {
           )
         }
 
-        toast.success(`تم ${statusText} ${itemType} بنجاح`, {
+        toast({
+          title: `تم ${statusText} ${itemType} بنجاح`,
           description: `${itemType} "${item?.name || 'غير معروف'}" أصبح الآن ${isActive ? 'نشط' : 'غير نشط'}.`,
-          duration: 3000,
         })
       } else {
         const errorData = await response.json()
-        toast.error(`فشل في ${statusText} ${itemType}`, {
+        toast({
+          variant: 'destructive',
+          title: `فشل في ${statusText} ${itemType}`,
           description: errorData.error || 'حدث خطأ أثناء تحديث الحالة.',
-          duration: 4000,
         })
       }
     } catch (error) {
@@ -449,9 +468,10 @@ export default function AdminLocationsPage() {
       const itemType = type === 'country' ? 'البلد' : 'المدينة'
       const statusText = isActive ? 'تفعيل' : 'إلغاء تفعيل'
       
-      toast.error(`خطأ في ${statusText} ${itemType}`, {
+      toast({
+        variant: 'destructive',
+        title: `خطأ في ${statusText} ${itemType}`,
         description: 'تعذر الاتصال بالخادم. يرجى المحاولة مرة أخرى.',
-        duration: 4000,
       })
     }
   }
@@ -518,7 +538,7 @@ export default function AdminLocationsPage() {
             <TabsTrigger value="countries">البلدان ({countries?.length || 0})</TabsTrigger>
             <TabsTrigger value="cities">المدن ({cities?.length || 0})</TabsTrigger>
           </TabsList>
-          <Button onClick={() => openCreateDialog(activeTab === 'countries' ? 'country' : 'city')}>
+          <Button onClick={() => openCreateDialog(activeTab === 'countries' ? 'country' : 'city')}> 
             <Plus className="h-4 w-4 ml-2" />
             إضافة {activeTab === 'countries' ? 'بلد' : 'مدينة'}
           </Button>
@@ -632,7 +652,7 @@ export default function AdminLocationsPage() {
                                 <AlertDialogHeader>
                                   <AlertDialogTitle>حذف البلد</AlertDialogTitle>
                                   <AlertDialogDescription>
-                                    هل أنت متأكد من حذف "{country.name}"؟
+                                    هل أنت متأكد من حذف "{country.name}"?
                                     {country.companiesCount > 0 && (
                                       <span className="block mt-2 text-red-600">
                                         يحتوي هذا البلد على {country.companiesCount} شركة ولا يمكن حذفه.
@@ -774,7 +794,7 @@ export default function AdminLocationsPage() {
                                 <AlertDialogHeader>
                                   <AlertDialogTitle>حذف المدينة</AlertDialogTitle>
                                   <AlertDialogDescription>
-                                    هل أنت متأكد من حذف "{city.name}"؟
+                                    هل أنت متأكد من حذف "{city.name}"?
                                     {city.companiesCount > 0 && (
                                       <span className="block mt-2 text-red-600">
                                         تحتوي هذه المدينة على {city.companiesCount} شركة ولا يمكن حذفها.
@@ -809,7 +829,7 @@ export default function AdminLocationsPage() {
 
       {/* نافذة إضافة/تعديل */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>
               {editingItem ? 'تعديل' : 'إضافة'} {dialogType === 'country' ? 'بلد' : 'مدينة'}
@@ -819,124 +839,141 @@ export default function AdminLocationsPage() {
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
-                الاسم *
-              </label>
-              <Input
-                placeholder={dialogType === 'country' ? 'مثال: المملكة العربية السعودية' : 'مثال: الرياض'}
-                value={formData.name}
-                onChange={(e) => {
-                  const name = e.target.value
-                  setFormData(prev => ({
-                    ...prev,
-                    name,
-                    ...(dialogType === 'city' && { slug: generateSlug(name) })
-                  }))
-                }}
-              />
-            </div>
-
-            {dialogType === 'country' ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
+            <div className="space-y-4">
               <div>
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
-                  كود البلد *
+                  الاسم *
                 </label>
                 <Input
-                  placeholder="مثال: sa, ae, kw"
-                  value={formData.code}
-                  onChange={(e) => setFormData(prev => ({ ...prev, code: e.target.value }))}
+                  placeholder={dialogType === 'country' ? 'مثال: المملكة العربية السعودية' : 'مثال: الرياض'}
+                  value={formData.name}
+                  onChange={(e) => {
+                    const name = e.target.value
+                    setFormData(prev => ({
+                      ...prev,
+                      name,
+                      ...(dialogType === 'city' && { slug: generateSlug(name) })
+                    }))
+                  }}
                 />
               </div>
-            ) : (
-              <>
-                <div>
+
+              {dialogType === 'country' ? (
+                <>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+                      كود البلد *
+                    </label>
+                    <Input
+                      placeholder="مثال: sa, ae, kw"
+                      value={formData.code}
+                      onChange={(e) => setFormData(prev => ({ ...prev, code: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+                      العلم (اختياري)
+                    </label>
+                    <Input
+                      placeholder="🇸🇦"
+                      value={formData.flag}
+                      onChange={(e) => setFormData(prev => ({ ...prev, flag: e.target.value }))}
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+                      المعرف (Slug) *
+                    </label>
+                    <Input
+                      placeholder="riyadh, jeddah, dubai"
+                      value={formData.slug}
+                      onChange={(e) => setFormData(prev => ({ ...prev, slug: e.target.value }))}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+                      البلد *
+                    </label>
+                    <Select 
+                      value={formData.countryId} 
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, countryId: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="اختر البلد" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {countries?.map((country) => (
+                          <SelectItem key={country.id} value={country.id}>
+                            {country.flag} {country.name} {!country.isActive && '(غير نشط)'}
+                          </SelectItem>
+                        )) || []}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </>
+              )}
+
+              <div>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+                  الوصف (اختياري)
+                </label>
+                <Textarea
+                  placeholder="وصف مختصر..."
+                  value={formData.description}
+                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                  rows={3}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <ImageUpload
+                  value={formData.image}
+                  onChange={(url) => setFormData(prev => ({ ...prev, image: url }))}
+                  label={`صورة ${dialogType === 'country' ? 'البلد' : 'المدينة'} (اختياري)`}
+                  maxSize={5}
+                />
+                <div className="mt-2">
                   <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
-                    المعرف (Slug) *
+                    أو أدخل رابط الصورة مباشرة
                   </label>
                   <Input
-                    placeholder="riyadh, jeddah, dubai"
-                    value={formData.slug}
-                    onChange={(e) => setFormData(prev => ({ ...prev, slug: e.target.value }))}
+                    placeholder="https://example.com/image.jpg"
+                    value={formData.image}
+                    onChange={(e) => setFormData(prev => ({ ...prev, image: e.target.value }))}
                   />
                 </div>
-
+              </div>
+              
+              {/* {editingItem && (
                 <div>
                   <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
-                    البلد *
+                    عدد الشركات
                   </label>
-                  <Select 
-                    value={formData.countryId} 
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, countryId: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="اختر البلد" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {countries?.map((country) => (
-                        <SelectItem key={country.id} value={country.id}>
-                          {country.flag} {country.name} {!country.isActive && '(غير نشط)'}
-                        </SelectItem>
-                      )) || []}
-                    </SelectContent>
-                  </Select>
+                  <Input
+                    type="number"
+                    placeholder="0"
+                    value={formData.companiesCount}
+                    onChange={(e) => setFormData(prev => ({ ...prev, companiesCount: parseInt(e.target.value) || 0 }))}
+                  />
                 </div>
-              </>
-            )}
+              )} */}
 
-            {dialogType === 'country' && (
-              <div>
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
-                  العلم (اختياري)
+              <div className="flex items-center justify-between pt-4">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {dialogType === 'country' ? 'بلد نشط' : 'مدينة نشطة'}
                 </label>
-                <Input
-                  placeholder="🇸🇦"
-                  value={formData.flag}
-                  onChange={(e) => setFormData(prev => ({ ...prev, flag: e.target.value }))}
+                <Switch
+                  checked={formData.isActive}
+                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isActive: checked }))}
                 />
               </div>
-            )}
-
-            <div>
-              <ImageUpload
-                value={formData.image}
-                onChange={(url) => setFormData(prev => ({ ...prev, image: url }))}
-                label={`صورة ${dialogType === 'country' ? 'البلد' : 'المدينة'} (اختياري)`}
-                maxSize={5}
-              />
-              <div className="mt-2">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
-                  أو أدخل رابط الصورة مباشرة
-                </label>
-                <Input
-                  placeholder="https://example.com/image.jpg"
-                  value={formData.image}
-                  onChange={(e) => setFormData(prev => ({ ...prev, image: e.target.value }))}
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
-                الوصف (اختياري)
-              </label>
-              <Textarea
-                placeholder="وصف مختصر..."
-                value={formData.description}
-                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                rows={3}
-              />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                {dialogType === 'country' ? 'بلد نشط' : 'مدينة نشطة'}
-              </label>
-              <Switch
-                checked={formData.isActive}
-                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isActive: checked }))}
-              />
             </div>
           </div>
 

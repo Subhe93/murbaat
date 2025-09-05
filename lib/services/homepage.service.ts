@@ -83,136 +83,94 @@ export interface HomePageData {
 // استخدام React cache لتحسين الأداء
 export const getHomePageData = cache(async (): Promise<HomePageData> => {
   try {
-    const [countries, featuredCompanies, categories, latestReviews] =
-      await Promise.all([
-        // جميع البلدان النشطة (مع إعطاء أولوية للبلدان التي تحتوي على شركات)
-        prisma.country.findMany({
-          where: {
-            isActive: true,
+    const [countriesData, featuredCompanies, categoriesData, latestReviews, stats] = await Promise.all([
+      // جلب البلدان مع عدد الشركات النشطة
+      prisma.country.findMany({
+        where: { isActive: true },
+        select: {
+          id: true,
+          code: true,
+          name: true,
+          flag: true,
+          image: true,
+          description: true,
+          _count: {
+            select: { companies: { where: { isActive: true } } },
           },
-          select: {
-            id: true,
-            code: true,
-            name: true,
-            flag: true,
-            image: true,
-            description: true,
-            companiesCount: true,
-          },
-          orderBy: [
-            { companiesCount: "desc" }, // البلدان التي تحتوي على شركات أولاً
-            { name: "asc" }, // ثم ترتيب أبجدي
-          ],
-          // عرض كحد أقصى 50 بلد للأداء (يمكن تعديله حسب الحاجة)
-          take: 50,
-        }),
+        },
+        take: 50,
+      }),
 
-        // الشركات المميزة مع fallback
-        prisma.company.findMany({
-          where: {
-            isActive: true,
-          },
-          select: {
-            id: true,
-            slug: true,
-            name: true,
-            shortDescription: true,
-            mainImage: true,
-            rating: true,
-            reviewsCount: true,
-            isFeatured: true,
-            category: {
-              select: {
-                name: true,
-                slug: true,
-              },
-            },
-            city: {
-              select: {
-                name: true,
-                slug: true,
-                country: {
-                  select: {
-                    code: true,
-                    name: true,
-                  },
-                },
-              },
-            },
-          },
-          orderBy: [
-            { isFeatured: "desc" }, // الشركات المميزة أولاً
-            { rating: "desc" }, // ثم حسب التقييم
-            { reviewsCount: "desc" }, // ثم حسب عدد المراجعات
-            { createdAt: "desc" }, // الأحدث إنشاءً
-          ],
-          take: 6,
-        }),
+      // الشركات المميزة
+      prisma.company.findMany({
+        where: { isActive: true, isFeatured: true },
+        select: {
+          id: true,
+          slug: true,
+          name: true,
+          shortDescription: true,
+          mainImage: true,
+          rating: true,
+          reviewsCount: true,
+          isFeatured: true,
+          category: { select: { name: true, slug: true } },
+          city: { select: { name: true, slug: true, country: { select: { code: true, name: true } } } },
+        },
+        orderBy: [{ rating: "desc" }, { reviewsCount: "desc" }],
+        take: 6,
+      }),
 
-        // الفئات النشطة مع عدد الشركات
-        prisma.category.findMany({
-          where: {
-            isActive: true,
-            // companies: {
-            //   some: {
-            //     isActive: true
-            //   }
-            // }
+      // الفئات مع عدد الشركات النشطة
+      prisma.category.findMany({
+        where: { isActive: true },
+        select: {
+          id: true,
+          slug: true,
+          name: true,
+          icon: true,
+          description: true,
+          _count: {
+            select: { companies: { where: { isActive: true } } },
           },
-          select: {
-            id: true,
-            slug: true,
-            name: true,
-            icon: true,
-            description: true,
-            companiesCount: true,
-          },
-          orderBy: { companiesCount: "desc" },
-          take: 12,
-        }),
+        },
+        orderBy: { companies: { _count: "desc" } },
+        take: 12,
+      }),
 
-        // أحدث المراجعات المعتمدة
-        prisma.review.findMany({
-          where: {
-            isApproved: true, // استخدام الحقل الصحيح من schema
-            company: {
-              isActive: true,
-            },
-          },
-          select: {
-            id: true,
-            rating: true,
-            comment: true,
-            createdAt: true,
-            userName: true, // اسم المستخدم من جدول Review مباشرة
-            userAvatar: true, // صورة المستخدم من جدول Review مباشرة
-            user: {
-              select: {
-                name: true,
-                avatar: true, // استخدام الحقل الصحيح من schema
-              },
-            },
-            company: {
-              select: {
-                name: true,
-                slug: true,
-                city: {
-                  select: {
-                    slug: true,
-                    country: {
-                      select: {
-                        code: true,
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-          orderBy: { createdAt: "desc" },
-          take: 6,
-        }),
-      ]);
+      // أحدث المراجعات المعتمدة
+      prisma.review.findMany({
+        where: { isApproved: true, company: { isActive: true } },
+        select: {
+          id: true,
+          rating: true,
+          comment: true,
+          createdAt: true,
+          userName: true,
+          userAvatar: true,
+          user: { select: { name: true, avatar: true } },
+          company: { select: { name: true, slug: true, city: { select: { slug: true, country: { select: { code: true } } } } } },
+        },
+        orderBy: { createdAt: "desc" },
+        take: 6,
+      }),
+
+      // الإحصائيات العامة
+      getSiteStats(),
+    ]);
+
+    // تنسيق بيانات البلدان لفرزها وإضافة العدد الصحيح
+    const countries = countriesData
+      .map(country => ({
+        ...country,
+        companiesCount: country._count.companies,
+      }))
+      .sort((a, b) => b.companiesCount - a.companiesCount || a.name.localeCompare(b.name));
+
+    // تنسيق بيانات الفئات
+    const categories = categoriesData.map(category => ({
+      ...category,
+      companiesCount: category._count.companies,
+    }));
 
     return {
       countries,
@@ -220,27 +178,20 @@ export const getHomePageData = cache(async (): Promise<HomePageData> => {
       categories,
       latestReviews,
       stats: {
-        totalCountries: countries.length,
-        totalCompanies: featuredCompanies.length,
-        totalCategories: categories.length,
-        totalReviews: latestReviews.length,
+        totalCountries: stats.countriesCount,
+        totalCompanies: stats.companiesCount,
+        totalCategories: stats.categoriesCount,
+        totalReviews: stats.reviewsCount,
       },
     };
   } catch (error) {
     console.error("خطأ في جلب بيانات الصفحة الرئيسية:", error);
-
-    // إرجاع بيانات فارغة في حالة الخطأ
     return {
       countries: [],
       featuredCompanies: [],
       categories: [],
       latestReviews: [],
-      stats: {
-        totalCountries: 0,
-        totalCompanies: 0,
-        totalCategories: 0,
-        totalReviews: 0,
-      },
+      stats: { totalCountries: 0, totalCompanies: 0, totalCategories: 0, totalReviews: 0 },
     };
   }
 });
@@ -276,10 +227,8 @@ export const getSiteStats = cache(async () => {
 // دالة للحصول على جميع البلدان (بدون حد)
 export const getAllCountries = cache(async () => {
   try {
-    return await prisma.country.findMany({
-      where: {
-        isActive: true,
-      },
+    const countriesData = await prisma.country.findMany({
+      where: { isActive: true },
       select: {
         id: true,
         code: true,
@@ -287,14 +236,19 @@ export const getAllCountries = cache(async () => {
         flag: true,
         image: true,
         description: true,
-        companiesCount: true,
+        _count: {
+          select: { companies: { where: { isActive: true } } },
+        },
       },
-      orderBy: [
-        { companiesCount: "desc" }, // البلدان التي تحتوي على شركات أولاً
-        { name: "asc" }, // ثم ترتيب أبجدي
-      ],
-      // بدون take لعرض جميع البلدان
     });
+
+    return countriesData
+      .map(country => ({
+        ...country,
+        companiesCount: country._count.companies,
+      }))
+      .sort((a, b) => b.companiesCount - a.companiesCount || a.name.localeCompare(b.name));
+
   } catch (error) {
     console.error("خطأ في جلب جميع البلدان:", error);
     return [];

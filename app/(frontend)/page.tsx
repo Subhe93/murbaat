@@ -1,4 +1,5 @@
 export const dynamic = "force-dynamic";
+import Link from 'next/link';
 import { Metadata } from 'next';
 import { HomeHero } from '@/components/home-hero';
 import { CountriesGrid } from '@/components/countries-grid';
@@ -51,9 +52,18 @@ export default async function HomePage() {
         <div className="space-y-12">
           <HomeHero stats={stats} />
           <ServicesCategories categories={data.categories} />
+                <div className="text-center mt-12">
+        <Link
+          href="/services"
+          className="inline-flex items-center px-8 py-4 bg-brand-orange hover:bg-orange-600 text-white font-medium rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 hover:-translate-y-1 animate-fade-in-up delay-1200"
+        >
+          عرض جميع الخدمات
+        </Link>
+      </div>
           <CountriesGrid countries={allCountries} />
           <FeaturedCompanies companies={data.featuredCompanies} />
           <LatestReviews reviews={data.latestReviews} />
+          <br></br>
         </div>
       </>
     );

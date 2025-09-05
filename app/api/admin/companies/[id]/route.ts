@@ -89,7 +89,8 @@ export async function PATCH(
     if (Object.keys(data).length === 1 && 
         (data.hasOwnProperty('isVerified') || data.hasOwnProperty('isFeatured') || data.hasOwnProperty('isActive'))) {
       console.log('تحديث حالة الشركة فقط')
-      const company = await updateCompanyStatus(companyId, data)
+      await updateCompanyStatus(companyId, data)
+      const company = await getCompanyForAdmin(companyId)
       return NextResponse.json(company)
     }
 

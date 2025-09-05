@@ -92,7 +92,7 @@ export default function AdminPendingReviewsPage() {
       const params = new URLSearchParams({
         page: currentPage.toString(),
         limit: '10',
-        status: 'pending'
+        statusFilter: 'pending'
       })
 
       const response = await fetch(`/api/admin/reviews?${params}`)
@@ -101,9 +101,9 @@ export default function AdminPendingReviewsPage() {
       }
 
       const data = await response.json()
-      if (data.success) {
-        setReviews(data.data || [])
-        setTotalPages(data.meta?.pagination?.totalPages || 1)
+      if (data.success && data.data) {
+        setReviews(data.data.reviews || [])
+        setTotalPages(data.data.totalPages || 1)
       } else {
         console.error('خطأ في API:', data.error)
         setError(data.error?.message || 'حدث خطأ في تحميل البيانات')
@@ -405,12 +405,12 @@ export default function AdminPendingReviewsPage() {
                         </AlertDialogContent>
                       </AlertDialog>
 
-                      <Button variant="ghost" size="sm" asChild>
+                      {/* <Button variant="ghost" size="sm" asChild>
                         <Link href={`/${review.company.slug}`} target="_blank">
                           <Eye className="h-4 w-4 ml-2" />
                           عرض الشركة
                         </Link>
-                      </Button>
+                      </Button> */}
                     </div>
                   </div>
                 </div>

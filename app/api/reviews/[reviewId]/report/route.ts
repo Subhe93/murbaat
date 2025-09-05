@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
+import { createNotification } from '@/lib/services/notification-service';
 
 // Schema for report validation
 const ReportReviewSchema = z.object({
@@ -31,7 +32,7 @@ export async function POST(
     // Check if review exists
     const review = await prisma.review.findUnique({
       where: { id: reviewId },
-      select: { id: true, company: { select: { name: true } } }
+      select: { id: true, title: true, company: { select: { id: true, name: true } } }
     });
 
     if (!review) {
@@ -50,6 +51,14 @@ export async function POST(
         reporterEmail: validatedData.reporterEmail,
         status: 'PENDING'
       }
+    });
+
+    await createNotification({
+        type: 'SYSTEM',
+        title: 'بلاغ جديد على مراجعة',
+        message: `تم استلام بلاغ جديد على مراجعة "${review.title}" لشركة ${review.company.name}`,
+        companyId: review.company.id,
+        data: { reportId: report.id, reviewId: review.id },
     });
 
     // Get reason text in Arabic

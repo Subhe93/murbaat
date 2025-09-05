@@ -34,7 +34,7 @@ import { Separator } from '@/components/ui/separator'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
-import { toast } from 'sonner'
+import { useToast } from '@/hooks/use-toast'
 import { WorkingHoursDisplay } from '@/components/working-hours-display'
 import { WorkingHour } from '@/lib/types/working-hours'
 
@@ -108,6 +108,7 @@ export default function CompanyDetailsPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const params = useParams()
+  const { toast } = useToast()
 
   useEffect(() => {
     if (status === 'loading') return
@@ -137,7 +138,11 @@ export default function CompanyDetailsPage() {
 
     } catch (error) {
       console.error('خطأ في جلب بيانات الشركة:', error)
-      toast.error('خطأ في جلب بيانات الشركة')
+      toast({
+        variant: 'destructive',
+        title: 'حدث خطأ',
+        description: 'خطأ في جلب بيانات الشركة',
+      })
     } finally {
       setIsLoading(false)
     }
@@ -179,10 +184,17 @@ export default function CompanyDetailsPage() {
         isFeatured: company[field] ? 'تم إلغاء تمييز الشركة' : 'تم تمييز الشركة'
       }
       
-      toast.success(statusMap[field])
+      toast({
+        title: 'تم بنجاح',
+        description: statusMap[field],
+      })
     } catch (error) {
       console.error('خطأ في تحديث الحالة:', error)
-      toast.error('خطأ في تحديث الحالة')
+      toast({
+        variant: 'destructive',
+        title: 'حدث خطأ',
+        description: 'خطأ في تحديث الحالة',
+      })
     } finally {
       setIsUpdating(false)
     }

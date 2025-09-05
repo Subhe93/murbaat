@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 
 export interface Notification {
@@ -37,32 +37,46 @@ export function useNotifications() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // جلب الإشعارات
-  const fetchNotifications = async () => {
-    if (!session?.user?.id || status === 'loading') return
+  const fetchNotifications = useCallback(async () => {
+    if (!session?.user?.id || status === 'loading') return;
 
+    setLoading(true);
     try {
-      setLoading(true)
-      const response = await fetch('/api/notifications')
-      if (!response.ok) throw new Error('فشل في جلب الإشعارات')
+      const isAdmin = session.user.role === 'ADMIN' || session.user.role === 'SUPER_ADMIN';
+      const url = isAdmin ? '/api/admin/notifications' : '/api/notifications';
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('فشل في جلب الإشعارات');
       
-      const data = await response.json()
-      setNotifications(data.notifications)
-      setStats(data.stats)
-      setError(null)
+      const data = await response.json();
+      
+      if (isAdmin && data.success) {
+        const adminNotifications = data.data.notifications || [];
+        const unreadCount = adminNotifications.filter(n => !n.isRead).length;
+        setNotifications(adminNotifications);
+        setStats({
+          unreadCount: unreadCount,
+          totalCount: data.data.totalPages * 10, // This is an approximation
+          byType: { review: 0, message: 0, system: 0, award: 0 } // Type data not available in admin API
+        });
+      } else if (!isAdmin) {
+        setNotifications(data.notifications || []);
+        setStats(data.stats || { unreadCount: 0, totalCount: 0, byType: { review: 0, message: 0, system: 0, award: 0 } });
+      }
+      setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'حدث خطأ غير متوقع')
+      setError(err instanceof Error ? err.message : 'حدث خطأ غير متوقع');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  }, [session, status]);
 
-  // تحديث حالة الإشعار
   const markAsRead = async (notificationId: string) => {
     if (!session?.user?.id) return
 
     try {
-      const response = await fetch(`/api/notifications/${notificationId}/read`, {
+      const isAdmin = session.user.role === 'ADMIN' || session.user.role === 'SUPER_ADMIN';
+      const url = isAdmin ? `/api/admin/notifications?id=${notificationId}` : `/api/notifications/${notificationId}/read`;
+      const response = await fetch(url, {
         method: 'PATCH'
       })
       
@@ -75,7 +89,6 @@ export function useNotifications() {
           )
         )
         
-        // تحديث الإحصائيات
         setStats(prev => ({
           ...prev,
           unreadCount: Math.max(0, prev.unreadCount - 1)
@@ -86,13 +99,14 @@ export function useNotifications() {
     }
   }
 
-  // تحديث جميع الإشعارات كمقروءة
   const markAllAsRead = async () => {
     if (!session?.user?.id) return
 
     try {
-      const response = await fetch('/api/notifications/mark-all-read', {
-        method: 'PATCH'
+      const isAdmin = session.user.role === 'ADMIN' || session.user.role === 'SUPER_ADMIN';
+      const url = isAdmin ? '/api/admin/notifications/mark-all-as-read' : '/api/notifications/mark-all-read';
+      const response = await fetch(url, {
+        method: isAdmin ? 'POST' : 'PATCH'
       })
       
       if (response.ok) {
@@ -106,30 +120,27 @@ export function useNotifications() {
     }
   }
 
-  // إعادة جلب الإشعارات
-  const refetch = () => {
+  const refetch = useCallback(() => {
     if (session?.user?.id) {
-      fetchNotifications()
+      fetchNotifications();
     }
-  }
+  }, [session?.user?.id, fetchNotifications]);
 
   useEffect(() => {
-    if (status === 'authenticated' && session?.user?.id) {
-      fetchNotifications()
-      
-      // تحديث الإشعارات كل دقيقة
-      const interval = setInterval(fetchNotifications, 60000)
-      return () => clearInterval(interval)
+    if (status === 'authenticated') {
+      fetchNotifications();
+      const interval = setInterval(fetchNotifications, 60000);
+      return () => clearInterval(interval);
     } else if (status === 'unauthenticated') {
-      setLoading(false)
-      setNotifications([])
+      setLoading(false);
+      setNotifications([]);
       setStats({
         unreadCount: 0,
         totalCount: 0,
         byType: { review: 0, message: 0, system: 0, award: 0 }
-      })
+      });
     }
-  }, [session?.user?.id, status])
+  }, [status, fetchNotifications]);
 
   return {
     notifications,

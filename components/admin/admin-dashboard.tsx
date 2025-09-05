@@ -1,5 +1,6 @@
 'use client'
 
+import { RecentActivitySummary } from './recent-activity-summary';
 import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
@@ -24,6 +25,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 // import { Progress } from '@/components/ui/progress'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { useToast } from '@/hooks/use-toast'
 
 interface AdminStats {
   overview: {
@@ -67,6 +69,7 @@ export function AdminDashboard() {
   const [error, setError] = useState<string | null>(null)
   const [isRecalculating, setIsRecalculating] = useState(false)
   const { data: session } = useSession()
+  const { toast } = useToast()
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -108,15 +111,26 @@ export function AdminDashboard() {
       const result = await response.json()
       
       if (result.success) {
-        alert(`تم إعادة حساب تقييمات ${result.companiesCount} شركة بنجاح`)
+        toast({
+          title: 'تم بنجاح',
+          description: `تم إعادة حساب تقييمات ${result.companiesCount} شركة بنجاح`,
+        })
         // Refresh stats
-        window.location.reload()
+        // window.location.reload()
       } else {
-        alert('حدث خطأ أثناء إعادة حساب التقييمات: ' + result.error?.message)
+        toast({
+          variant: 'destructive',
+          title: 'حدث خطأ',
+          description: 'حدث خطأ أثناء إعادة حساب التقييمات: ' + result.error?.message,
+        })
       }
     } catch (error) {
       console.error('خطأ في إعادة حساب التقييمات:', error)
-      alert('حدث خطأ أثناء إعادة حساب التقييمات')
+      toast({
+        variant: 'destructive',
+        title: 'حدث خطأ',
+        description: 'حدث خطأ أثناء إعادة حساب التقييمات',
+      })
     } finally {
       setIsRecalculating(false)
     }
@@ -299,6 +313,8 @@ export function AdminDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      <RecentActivitySummary />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* توزيع الشركات حسب البلد */}
@@ -536,6 +552,19 @@ export function AdminDashboard() {
                 <Star className="h-6 w-6" />
               )}
               <span className="text-sm">إعادة حساب التقييمات</span>
+            </Button>
+            <Button 
+              variant="outline" 
+              className="h-20 w-full flex flex-col items-center justify-center space-y-2"
+              onClick={() => {
+                toast({
+                  title: "Test Toast",
+                  description: "This is a test toast message.",
+                });
+              }}
+            >
+              <Star className="h-6 w-6" />
+              <span className="text-sm">Test Toast</span>
             </Button>
           </div>
         </CardContent>

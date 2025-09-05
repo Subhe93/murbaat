@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { MapPin, Phone, Mail, Globe, Building2, Tag, ChevronDown, ChevronRight, Facebook, Twitter, Instagram, Linkedin } from 'lucide-react';
+import { MapPin, Phone, Mail, Globe, Building2, Tag, ChevronDown, ChevronRight, Facebook, Twitter, Instagram, Linkedin, Youtube } from 'lucide-react';
+import { TiktokIcon } from '@/components/icons/tiktok-icon';
 import { Badge } from '@/components/ui/badge';
 import { Company } from '@/lib/data';
 
@@ -23,6 +24,10 @@ export function CompanyInfo({ company }: CompanyInfoProps) {
         return <Instagram className="h-5 w-5" />;
       case 'linkedin':
         return <Linkedin className="h-5 w-5" />;
+      case 'youtube':
+        return <Youtube className="h-5 w-5" />;
+      case 'tiktok':
+        return <TiktokIcon className="h-5 w-5" />;
       default:
         return null;
     }
@@ -38,6 +43,10 @@ export function CompanyInfo({ company }: CompanyInfoProps) {
         return 'text-pink-500 hover:text-pink-600';
       case 'linkedin':
         return 'text-blue-700 hover:text-blue-800';
+      case 'youtube':
+        return 'text-red-600 hover:text-red-700';
+      case 'tiktok':
+        return 'text-black hover:text-gray-700 dark:text-white dark:hover:text-gray-300';
       default:
         return 'text-gray-600 hover:text-gray-700';
     }
@@ -165,7 +174,7 @@ export function CompanyInfo({ company }: CompanyInfoProps) {
           )}
 
           {/* Social Media */}
-          {(company.socialMedia.facebook || company.socialMedia.twitter || company.socialMedia.instagram || company.socialMedia.linkedin) && (
+          {(company.socialMedia.facebook || company.socialMedia.twitter || company.socialMedia.instagram || company.socialMedia.linkedin || company.socialMedia.youtube || company.socialMedia.tiktok) && (
             <div className="md:col-span-2">
               <div className="flex items-center space-x-4 space-x-reverse mb-3">
                 <Building2 className="h-6 w-6 text-gray-600 flex-shrink-0" />

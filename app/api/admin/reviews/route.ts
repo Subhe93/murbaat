@@ -1,96 +1,86 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-// GET /api/admin/reviews - Get all reviews for admin
 export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '10');
-    const status = searchParams.get('status'); // 'pending', 'approved', 'all'
-    const rating = searchParams.get('rating');
-    const search = searchParams.get('search');
+  const { searchParams } = new URL(request.url);
+  const page = parseInt(searchParams.get('page') || '1', 10);
+  const limit = parseInt(searchParams.get('limit') || '10', 10);
+  const skip = (page - 1) * limit;
+  const searchTerm = searchParams.get('searchTerm') || '';
+  const statusFilter = searchParams.get('statusFilter');
+  const ratingFilter = searchParams.get('ratingFilter');
 
-    const skip = (page - 1) * limit;
+  const where: any = {};
 
-    // Build where clause
-    const where: any = {};
-    
-    if (status === 'pending') {
-      where.isApproved = false;
-    } else if (status === 'approved') {
+  if (searchTerm) {
+    where.OR = [
+      { title: { contains: searchTerm, mode: 'insensitive' } },
+      { comment: { contains: searchTerm, mode: 'insensitive' } },
+      { company: { name: { contains: searchTerm, mode: 'insensitive' } } },
+    ];
+  }
+
+  if (statusFilter && statusFilter !== 'all') {
+    if (statusFilter === 'approved') {
       where.isApproved = true;
+    } else if (statusFilter === 'pending') {
+      where.isApproved = false;
     }
+  }
 
-    if (rating && rating !== 'all') {
-      where.rating = parseInt(rating);
-    }
+  if (ratingFilter && ratingFilter !== 'all') {
+    where.rating = parseInt(ratingFilter, 10);
+  }
 
-    if (search) {
-      where.OR = [
-        { title: { contains: search, mode: 'insensitive' } },
-        { comment: { contains: search, mode: 'insensitive' } },
-        { userName: { contains: search, mode: 'insensitive' } },
-        { company: { name: { contains: search, mode: 'insensitive' } } }
-      ];
-    }
+  try {
+    const reviews = await prisma.review.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy: {
+        createdAt: 'desc',
+      },
+      include: {
+        company: true,
+        user: true,
+        images: true,
+      },
+    });
 
-    const [reviews, total] = await Promise.all([
-      prisma.review.findMany({
-        where,
-        include: {
-          company: {
-            select: {
-              id: true,
-              name: true,
-              slug: true
-            }
-          },
-          user: {
-            select: {
-              id: true,
-              name: true,
-              avatar: true
-            }
-          },
-          images: {
-            select: {
-              id: true,
-              imageUrl: true
-            }
-          }
-        },
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: limit
-      }),
-      prisma.review.count({ where })
-    ]);
+    const totalReviews = await prisma.review.count({ where });
 
     return NextResponse.json({
       success: true,
-      data: reviews,
-      meta: {
-        pagination: {
-          page,
-          limit,
-          total,
-          totalPages: Math.ceil(total / limit)
-        }
-      }
-    });
-
-  } catch (error) {
-    console.error('خطأ في جلب التقييمات للإدارة:', error);
-    return NextResponse.json(
-      { 
-        success: false, 
-        error: { 
-          message: 'حدث خطأ أثناء جلب التقييمات',
-          code: 'FETCH_ADMIN_REVIEWS_ERROR'
-        }
+      data: {
+        reviews,
+        totalPages: Math.ceil(totalReviews / limit),
+        currentPage: page,
       },
+    });
+  } catch (error) {
+    console.error('Error fetching reviews:', error);
+    return NextResponse.json(
+      { success: false, error: { message: 'Failed to fetch reviews' } },
       { status: 500 }
     );
   }
+}
+
+export async function DELETE(request: NextRequest) {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+        return NextResponse.json({ success: false, error: { message: 'Review ID is required' } }, { status: 400 });
+    }
+
+    try {
+        await prisma.review.delete({
+            where: { id },
+        });
+        return NextResponse.json({ success: true, message: 'Review deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting review:', error);
+        return NextResponse.json({ success: false, error: { message: 'Failed to delete review' } }, { status: 500 });
+    }
 }

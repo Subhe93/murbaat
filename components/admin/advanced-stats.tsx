@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-// import { Progress } from '@/components/ui/progress'
+import { Progress } from '@/components/ui/progress'
 import { Star, Building2, MessageSquare } from 'lucide-react'
 
 interface AdvancedStatsProps {
@@ -23,6 +23,7 @@ interface AdvancedStatsProps {
 }
 
 export function AdvancedStats({ categoryPerformance, countryPerformance }: AdvancedStatsProps) {
+  console.log("Rendering AdvancedStats");
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* أداء الفئات */}
