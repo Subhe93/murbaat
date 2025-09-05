@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
+// import { Progress } from '@/components/ui/progress'
 import { Star, Building2, MessageSquare } from 'lucide-react'
 
 interface AdvancedStatsProps {
@@ -67,10 +67,10 @@ export function AdvancedStats({ categoryPerformance, countryPerformance }: Advan
                     <span>{category.totalReviews} مراجعة</span>
                   </div>
                   <div className="text-center">
-                    <Progress 
+                    {/* <Progress 
                       value={(category.averageRating / 5) * 100} 
                       className="h-1"
-                    />
+                    /> */}
                   </div>
                 </div>
               </div>
@@ -83,7 +83,7 @@ export function AdvancedStats({ categoryPerformance, countryPerformance }: Advan
       <Card>
         <CardHeader>
           <CardTitle>أداء البلدان</CardTitle>
-          <CardDescription>تحليل أداء البلدان المختلفة</CardDescription>
+          <CardDescription>تحليل أداء البلدان المختلفة</CardDescription>.
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -120,10 +120,10 @@ export function AdvancedStats({ categoryPerformance, countryPerformance }: Advan
                     <span>{country.totalReviews} مراجعة</span>
                   </div>
                   <div className="text-center">
-                    <Progress 
+                    {/* <Progress 
                       value={(country.averageRating / 5) * 100} 
                       className="h-1"
-                    />
+                    /> */}
                   </div>
                 </div>
               </div>
