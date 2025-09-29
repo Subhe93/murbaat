@@ -19,7 +19,9 @@ import {
   Home,
   Tag,
   MapPin,
-  Award
+  Award,
+  Upload,
+  RefreshCw
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
@@ -47,6 +49,7 @@ const getNavigation = (stats: DashboardStats) => [
     children: [
       { name: 'جميع الشركات', href: '/admin/companies', icon: Eye },
       { name: 'إضافة شركة', href: '/admin/companies/add', icon: Plus },
+      { name: 'استيراد من CSV', href: '/admin/companies/import', icon: Upload },
       { name: 'طلبات الانضمام', href: '/admin/company-requests', icon: FileText, badge: stats.pendingRequests.toString() },
     ]
   },
@@ -106,6 +109,7 @@ const getNavigation = (stats: DashboardStats) => [
       { name: 'إعدادات عامة', href: '/admin/settings', icon: Settings },
       { name: 'البلدان والمدن', href: '/admin/settings/locations', icon: MapPin },
       { name: 'الفئات', href: '/admin/settings/categories', icon: Tag },
+      { name: 'إدارة الكاش', href: '/admin/cache', icon: RefreshCw },
     ]
   },
 ]

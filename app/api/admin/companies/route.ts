@@ -83,16 +83,24 @@ export async function POST(request: NextRequest) {
     const data = await request.json()
 
     // التحقق من صحة البيانات المطلوبة
-    if (!data.name || !data.categoryId || !data.cityId || !data.countryId) {
+    if (!data.name || !data.slug || !data.categoryId || !data.cityId || !data.countryId) {
       return NextResponse.json(
-        { error: 'البيانات المطلوبة مفقودة' },
+        { error: 'البيانات المطلوبة مفقودة: اسم الشركة، السلوغ، الفئة، المدينة، والبلد' },
         { status: 400 }
       )
+    }
+
+    // التحقق من صحة السلوغ (أحرف إنجليزية وأرقام وشرطات فقط)
+    if (!/^[a-z0-9\-]+$/.test(data.slug)) {
+      return NextResponse.json({ 
+        error: 'رابط الشركة يجب أن يحتوي على أحرف إنجليزية وأرقام وشرطات فقط' 
+      }, { status: 400 })
     }
 
     // استخدام دالة createCompany من admin-queries
     const company = await createCompany({
       name: data.name,
+      slug: data.slug,
       description: data.description,
       shortDescription: data.shortDescription,
       longDescription: data.longDescription,

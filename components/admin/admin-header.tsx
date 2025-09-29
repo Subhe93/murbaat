@@ -15,6 +15,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { CacheClearButton } from '@/components/admin/cache-clear-button'
 
 interface Notification {
     id: string;
@@ -80,6 +81,9 @@ export function AdminHeader() {
         </div>
 
         <div className="flex items-center space-x-4 space-x-reverse">
+          {/* زر تفريغ الكاش */}
+          <CacheClearButton showText={false} />
+          
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="relative">

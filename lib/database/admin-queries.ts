@@ -2,6 +2,7 @@ import prisma from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
 import { DashboardStats } from '@/lib/types/database'
 import { WorkingHoursService } from '@/lib/services/working-hours.service'
+import { createEnglishSlug, createUniqueEnglishSlug } from '@/lib/utils/database-helpers'
 
 // إحصائيات داشبورد المدير
 export async function getAdminDashboardStats(): Promise<DashboardStats> {
@@ -587,6 +588,7 @@ export async function deleteCompany(companyId: string) {
 // إنشاء شركة جديدة
 export async function createCompany(data: {
   name: string
+  slug?: string
   description?: string
   shortDescription?: string
   longDescription?: string
@@ -606,12 +608,22 @@ export async function createCompany(data: {
   isVerified?: boolean
   isFeatured?: boolean
 }) {
-  const slug = data.name
-    .toLowerCase()
-    .replace(/\s+/g, '-')
-    .replace(/[^\w\u0600-\u06FF\-]/g, '')
-    .replace(/\-+/g, '-')
-    .trim()
+  let slug: string;
+  
+  if (data.slug) {
+    // التحقق من أن السلوغ المخصص فريد
+    const existingCompany = await prisma.company.findFirst({
+      where: { slug: data.slug }
+    })
+    
+    if (existingCompany) {
+      throw new Error('هذا السلوغ مستخدم بالفعل')
+    }
+    
+    slug = createEnglishSlug(data.slug)
+  } else {
+    slug = await createUniqueEnglishSlug('company', data.name)
+  }
 
   return await prisma.company.create({
     data: {
@@ -638,6 +650,7 @@ export async function createCompany(data: {
 // تحديث شركة
 export async function updateCompany(companyId: string, data: Partial<{
   name: string
+  slug: string
   description: string
   shortDescription: string
   longDescription: string
@@ -662,13 +675,23 @@ export async function updateCompany(companyId: string, data: Partial<{
   const { additionalImages, ...companyData } = data
   const updateData: any = { ...companyData }
   
-  if (data.name) {
-    updateData.slug = data.name
-      .toLowerCase()
-      .replace(/\s+/g, '-')
-      .replace(/[^\w\u0600-\u06FF\-]/g, '')
-      .replace(/\-+/g, '-')
-      .trim()
+  // إذا تم تمرير slug مخصص، استخدمه، وإلا أنشئ واحد من الاسم
+  if (data.slug) {
+    // التحقق من أن السلوغ المخصص فريد
+    const existingCompany = await prisma.company.findFirst({
+      where: {
+        slug: data.slug,
+        id: { not: companyId }
+      }
+    })
+    
+    if (existingCompany) {
+      throw new Error('هذا السلوغ مستخدم بالفعل')
+    }
+    
+    updateData.slug = createEnglishSlug(data.slug)
+  } else if (data.name) {
+    updateData.slug = await createUniqueEnglishSlug('company', data.name, companyId)
   }
 
   // استخدام transaction لتحديث الشركة والصور معاً

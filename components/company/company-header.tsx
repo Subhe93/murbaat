@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { useNotifications } from '@/hooks/use-notifications'
 import { cn } from '@/lib/utils'
+import { QuickCacheClear } from '@/components/admin/cache-clear-button'
 
 export function CompanyHeader() {
   const { data: session } = useSession()
@@ -79,6 +80,9 @@ export function CompanyHeader() {
         </div>
 
         <div className="flex items-center space-x-4 space-x-reverse">
+          {/* زر تفريغ كاش الشركة */}
+          <QuickCacheClear type="company" />
+          
           {/* الإشعارات */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

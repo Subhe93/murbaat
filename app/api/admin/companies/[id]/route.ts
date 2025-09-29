@@ -73,6 +73,17 @@ export async function PATCH(
       return NextResponse.json({ error: 'اسم الشركة مطلوب' }, { status: 400 })
     }
 
+    if (data.slug && !data.slug.trim()) {
+      return NextResponse.json({ error: 'رابط الشركة (slug) مطلوب' }, { status: 400 })
+    }
+
+    // التحقق من صحة السلوغ (أحرف إنجليزية وأرقام وشرطات فقط)
+    if (data.slug && !/^[a-z0-9\-]+$/.test(data.slug)) {
+      return NextResponse.json({ 
+        error: 'رابط الشركة يجب أن يحتوي على أحرف إنجليزية وأرقام وشرطات فقط' 
+      }, { status: 400 })
+    }
+
     if (data.categoryId && !data.categoryId.trim()) {
       return NextResponse.json({ error: 'فئة الشركة مطلوبة' }, { status: 400 })
     }
@@ -107,6 +118,12 @@ export async function PATCH(
     // معالجة أخطاء Prisma المحددة
     if (error instanceof Error) {
       if (error.message.includes('Unique constraint failed')) {
+        if (error.message.includes('slug')) {
+          return NextResponse.json(
+            { error: 'هذا الرابط (slug) مستخدم بالفعل من قبل شركة أخرى' },
+            { status: 409 }
+          )
+        }
         return NextResponse.json(
           { error: 'اسم الشركة أو الرابط موجود مسبقاً' },
           { status: 409 }

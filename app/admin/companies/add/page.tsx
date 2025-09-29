@@ -62,6 +62,7 @@ export default function AddCompanyPage() {
 
   const [formData, setFormData] = useState({
     name: '',
+    slug: '',
     description: '',
     shortDescription: '',
     longDescription: '',
@@ -284,9 +285,9 @@ export default function AddCompanyPage() {
 
     try {
       // التحقق من البيانات المطلوبة
-      if (!formData.name || !formData.categoryId || !formData.countryId || !formData.cityId) {
+      if (!formData.name || !formData.slug || !formData.categoryId || !formData.countryId || !formData.cityId) {
         toast.error('حقول مطلوبة مفقودة', {
-          description: 'يرجى ملء جميع الحقول المطلوبة: اسم الشركة، الفئة، البلد، والمدينة.',
+          description: 'يرجى ملء جميع الحقول المطلوبة: اسم الشركة، السلوغ، الفئة، البلد، والمدينة.',
           duration: 4000,
         })
         return
@@ -420,6 +421,83 @@ export default function AddCompanyPage() {
                     placeholder="شركة ABC للتقنية"
                     required
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="slug">رابط الشركة (Slug) *</Label>
+                  <div className="flex items-center space-x-2 space-x-reverse">
+                    <span className="text-sm text-gray-500 whitespace-nowrap">
+                      /[country]/city/[city]/company/
+                    </span>
+                    <Input
+                      id="slug"
+                      value={formData.slug || ''}
+                      onChange={(e) => {
+                        const value = e.target.value
+                          .toLowerCase()
+                          .replace(/[^a-z0-9\-]/g, '') // السماح بالأحرف الإنجليزية والأرقام والشرطات فقط
+                          .replace(/\-+/g, '-') // استبدال عدة شرطات بشرطة واحدة
+                          .replace(/^-+/, '') // إزالة الشرطات من البداية
+                          .replace(/-+$/, ''); // إزالة الشرطات من النهاية
+                        setFormData(prev => ({ ...prev, slug: value }))
+                      }}
+                      placeholder="abc-technology-company"
+                      className="text-left flex-1"
+                      dir="ltr"
+                      required
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        if (formData.name) {
+                          // دالة بسيطة لتحويل الاسم العربي إلى سلوغ إنجليزي
+                          const generateSlugFromName = (name: string) => {
+                            const arabicToEnglish: { [key: string]: string } = {
+                              'ا': 'a', 'أ': 'a', 'إ': 'i', 'آ': 'aa',
+                              'ب': 'b', 'ت': 't', 'ث': 'th', 'ج': 'j',
+                              'ح': 'h', 'خ': 'kh', 'د': 'd', 'ذ': 'dh',
+                              'ر': 'r', 'ز': 'z', 'س': 's', 'ش': 'sh',
+                              'ص': 's', 'ض': 'd', 'ط': 't', 'ظ': 'z',
+                              'ع': 'a', 'غ': 'gh', 'ف': 'f', 'ق': 'q',
+                              'ك': 'k', 'ل': 'l', 'م': 'm', 'ن': 'n',
+                              'ه': 'h', 'و': 'w', 'ي': 'y', 'ى': 'a',
+                              'ة': 'h', 'ء': 'a', 'ئ': 'e', 'ؤ': 'o'
+                            };
+                            
+                            let result = name.toLowerCase().trim();
+                            
+                            // تحويل "ال" التعريف
+                            result = result.replace(/ال/g, 'al-');
+                            
+                            // تحويل الأحرف العربية
+                            for (const [arabic, english] of Object.entries(arabicToEnglish)) {
+                              const regex = new RegExp(arabic, 'g');
+                              result = result.replace(regex, english);
+                            }
+                            
+                            return result
+                              .replace(/\s+/g, '-')
+                              .replace(/[^\w\-]/g, '')
+                              .replace(/\-+/g, '-')
+                              .replace(/^-+/, '')
+                              .replace(/-+$/, '') || 'company';
+                          };
+                          
+                          const generatedSlug = generateSlugFromName(formData.name);
+                          setFormData(prev => ({ ...prev, slug: generatedSlug }));
+                        }
+                      }}
+                      disabled={!formData.name}
+                      title="توليد السلوغ من اسم الشركة"
+                    >
+                      توليد
+                    </Button>
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    يجب أن يحتوي على أحرف إنجليزية وأرقام وشرطات فقط. سيتم استخدامه في رابط الشركة.
+                  </p>
                 </div>
 
                 <div className="space-y-2">

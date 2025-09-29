@@ -7,6 +7,10 @@ export const metadata: Metadata = {
   description: 'إدارة صفحة شركتك ومراجعاتها وإحصائياتها',
 }
 
+// منع الكاش في داشبورد الشركة
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export default function CompanyDashboardLayout({
   children,
 }: {
