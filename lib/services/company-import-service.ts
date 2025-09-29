@@ -62,7 +62,15 @@ export class CompanyImportService {
       }
 
       // معالجة الموقع (البلد والمدينة)
-      const location = await this.processLocation(cleanData.address, settings.createMissingCities)
+      let location
+      if (cleanData.country && cleanData.city) {
+        // استخدام أعمدة منفصلة للدولة والمدينة
+        location = await this.processCountryAndCity(cleanData.country, cleanData.city, settings.createMissingCities)
+      } else {
+        // استخدام العنوان القديم كاحتياطي
+        location = await this.processLocation(cleanData.address, settings.createMissingCities)
+      }
+      
       if (!location) {
         return { success: false, error: 'لا يمكن تحديد الموقع' }
       }
@@ -287,7 +295,10 @@ export class CompanyImportService {
       location: extractLocation(row.Adresse || ''),
       email: '', // غير متوفر في البيانات الحالية
       services: generateServices(category),
-      specialties: [] // يمكن إضافتها لاحقاً
+      specialties: [], // يمكن إضافتها لاحقاً
+      // إضافة دعم أعمدة منفصلة للدولة والمدينة
+      country: row.Country?.trim() || row.country?.trim() || '',
+      city: row.City?.trim() || row.city?.trim() || ''
     }
   }
 
@@ -323,6 +334,10 @@ export class CompanyImportService {
 
   private async processLocation(address: string, createMissing: boolean) {
     return this.locationMapper.mapLocation(address, createMissing)
+  }
+
+  private async processCountryAndCity(countryName: string, cityName: string, createMissing: boolean) {
+    return this.locationMapper.mapCountryAndCity(countryName, cityName, createMissing)
   }
 
   private async createCompany(data: any) {
@@ -399,7 +414,8 @@ export class CompanyImportService {
     let downloaded = 0
     let failed = 0
 
-    for (const [index, url] of imageUrls.entries()) {
+    for (let index = 0; index < imageUrls.length; index++) {
+      const url = imageUrls[index]
       try {
         const result = await this.imageDownloader.downloadAndSaveImage(url, companyId, index)
         if (result.success) {

@@ -27,6 +27,7 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { toast } from 'sonner'
 import { AvailableCategories } from '@/components/admin/available-categories'
+import { AvailableLocations } from '@/components/admin/available-locations'
 
 interface ImportStats {
   totalRows: number
@@ -300,6 +301,9 @@ export default function ImportCompaniesPage() {
 
       {/* الفئات المتاحة */}
       <AvailableCategories />
+
+      {/* المواقع المتاحة */}
+      <AvailableLocations />
 
       {/* إعدادات الاستيراد */}
       <Card>
