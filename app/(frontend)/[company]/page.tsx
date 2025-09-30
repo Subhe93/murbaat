@@ -261,13 +261,52 @@ export default async function CompanyPage({
       )
     };
 
+    // JSON-LD Schema للـ BreadcrumbList (SEO)
+    const breadcrumbJsonLd = {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "item": baseUrl,
+          "name": "الرئيسية"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "item": `${baseUrl}/country/${company.country.code}`,
+          "name": company.country.name
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "item": `${baseUrl}/country/${company.country.code}/city/${company.city.slug}`,
+          "name": company.city.name
+        },
+        {
+          "@type": "ListItem",
+          "position": 4,
+          "name": company.name
+        }
+      ]
+    };
+
     return (
       <>
-        {/* JSON-LD Schema */}
+        {/* JSON-LD Schema للشركة */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify(jsonLd),
+          }}
+        />
+        
+        {/* JSON-LD Schema للـ BreadcrumbList */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(breadcrumbJsonLd),
           }}
         />
 
