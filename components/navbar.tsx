@@ -45,13 +45,13 @@ export function Navbar() {
               <Link href="/search" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
                 البحث المتقدم
               </Link>
-              <Link href="/sy" className="text-gray-700 dark:text-gray-300 hover:text-brand-green dark:hover:text-brand-green transition-colors">
+              <Link href="/country/sy" className="text-gray-700 dark:text-gray-300 hover:text-brand-green dark:hover:text-brand-green transition-colors">
                 سوريا
               </Link>
-              <Link href="/lb" className="text-gray-700 dark:text-gray-300 hover:text-brand-orange dark:hover:text-brand-orange transition-colors">
+              <Link href="/country/lb" className="text-gray-700 dark:text-gray-300 hover:text-brand-orange dark:hover:text-brand-orange transition-colors">
                 لبنان
               </Link>
-              <Link href="/jo" className="text-gray-700 dark:text-gray-300 hover:text-brand-yellow dark:hover:text-brand-yellow transition-colors">
+              <Link href="/country/jo" className="text-gray-700 dark:text-gray-300 hover:text-brand-yellow dark:hover:text-brand-yellow transition-colors">
                 الأردن
               </Link>
             </div>
@@ -184,21 +184,21 @@ export function Navbar() {
                   البحث المتقدم
                 </Link>
                 <Link 
-                  href="/sy" 
+                  href="/country/sy" 
                   className="block text-gray-700 dark:text-gray-300 hover:text-brand-green dark:hover:text-brand-green"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   سوريا
                 </Link>
                 <Link 
-                  href="/lb" 
+                  href="/country/lb" 
                   className="block text-gray-700 dark:text-gray-300 hover:text-brand-orange dark:hover:text-brand-orange"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   لبنان
                 </Link>
                 <Link 
-                  href="/jo" 
+                  href="/country/jo" 
                   className="block text-gray-700 dark:text-gray-300 hover:text-brand-yellow dark:hover:text-brand-yellow"
                   onClick={() => setIsMenuOpen(false)}
                 >

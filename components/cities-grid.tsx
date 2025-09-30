@@ -19,7 +19,7 @@ export function CitiesGrid({ cities, countryCode }: CitiesGridProps) {
       {cities.map((city) => (
         <Link
           key={city.slug}
-          href={`/${countryCode}/city/${city.slug}`}
+          href={`/country/${countryCode}/city/${city.slug}`}
           className="group bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden"
         >
           <div className="relative h-32 overflow-hidden">

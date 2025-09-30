@@ -115,7 +115,7 @@ export default async function CityPage({ params, searchParams }: CityPageProps) 
             <BreadcrumbSeparator />
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link href={`/${params.country}`}>{cityData.country.name}</Link>
+                <Link href={`/country/${params.country}`}>{cityData.country.name}</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />

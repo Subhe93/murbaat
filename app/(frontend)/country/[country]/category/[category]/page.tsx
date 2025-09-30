@@ -166,7 +166,7 @@ export default async function CategoryPage({ params, searchParams = {} }: Catego
               <BreadcrumbSeparator />
               <BreadcrumbItem>
                 <BreadcrumbLink asChild>
-                  <Link href={`/${params.country}`}>{params.country.toUpperCase()}</Link>
+                  <Link href={`/country/${params.country}`}>{params.country.toUpperCase()}</Link>
                 </BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator />

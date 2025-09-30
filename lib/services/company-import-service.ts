@@ -1,78 +1,100 @@
-import { PrismaClient } from '@prisma/client'
-import { ImageDownloadService } from './image-download-service'
-import { DataValidationService } from './data-validation-service-simple'
-import { CategoryMappingService } from './category-mapping-service-simple'
-import { LocationMappingService } from './location-mapping-service-simple'
+import { PrismaClient } from "@prisma/client";
+import { ImageDownloadService } from "./image-download-service";
+import { DataValidationService } from "./data-validation-service-simple";
+import { CategoryMappingService } from "./category-mapping-service-simple";
+import { LocationMappingService } from "./location-mapping-service-simple";
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient();
 
 interface ImportSettings {
-  downloadImages: boolean
-  createMissingCategories: boolean
-  createMissingCities: boolean
-  skipDuplicates: boolean
-  validateEmails: boolean
-  validatePhones: boolean
-  batchSize: number
+  downloadImages: boolean;
+  createMissingCategories: boolean;
+  createMissingCities: boolean;
+  skipDuplicates: boolean;
+  validateEmails: boolean;
+  validatePhones: boolean;
+  batchSize: number;
 }
 
 interface ImportResult {
-  success: boolean
-  skipped?: boolean
-  error?: string
-  companyId?: string
-  imagesDownloaded?: number
-  imagesFailed?: number
+  success: boolean;
+  skipped?: boolean;
+  error?: string;
+  companyId?: string;
+  imagesDownloaded?: number;
+  imagesFailed?: number;
 }
 
 export class CompanyImportService {
-  private imageDownloader = new ImageDownloadService()
-  private validator = new DataValidationService()
-  private categoryMapper = new CategoryMappingService()
-  private locationMapper = new LocationMappingService()
+  private imageDownloader = new ImageDownloadService();
+  private validator = new DataValidationService();
+  private categoryMapper = new CategoryMappingService();
+  private locationMapper = new LocationMappingService();
 
-  async processCompanyRow(row: any, settings: ImportSettings, rowNumber: number): Promise<ImportResult> {
+  async processCompanyRow(
+    row: any,
+    settings: ImportSettings,
+    rowNumber: number
+  ): Promise<ImportResult> {
     try {
       // تنظيف وتحضير البيانات
-      const cleanData = this.cleanRowData(row)
-      
+      const cleanData = this.cleanRowData(row);
+
       // التحقق من البيانات الأساسية
       if (!cleanData.name || !cleanData.name.trim()) {
-        return { success: false, error: 'اسم الشركة مطلوب' }
+        return { success: false, error: "اسم الشركة مطلوب" };
       }
 
       // التحقق من الشركات المكررة
       if (settings.skipDuplicates) {
-        const existingCompany = await this.checkDuplicateCompany(cleanData.name, cleanData.phone, cleanData.email)
+        const existingCompany = await this.checkDuplicateCompany(
+          cleanData.name,
+          cleanData.phone,
+          cleanData.email
+        );
         if (existingCompany) {
-          return { success: false, skipped: true, error: 'الشركة موجودة مسبقاً' }
+          return {
+            success: false,
+            skipped: true,
+            error: "الشركة موجودة مسبقاً",
+          };
         }
       }
 
       // التحقق من صحة البيانات
-      const validationResult = await this.validateData(cleanData, settings)
+      const validationResult = await this.validateData(cleanData, settings);
       if (!validationResult.isValid) {
-        return { success: false, error: validationResult.error }
+        return { success: false, error: validationResult.error };
       }
 
       // معالجة الفئة
-      const category = await this.processCategory(cleanData.category, settings.createMissingCategories)
+      const category = await this.processCategory(
+        cleanData.category,
+        settings.createMissingCategories
+      );
       if (!category) {
-        return { success: false, error: 'فئة غير صالحة أو غير موجودة' }
+        return { success: false, error: "فئة غير صالحة أو غير موجودة" };
       }
 
       // معالجة الموقع (البلد والمدينة)
-      let location
+      let location;
       if (cleanData.country && cleanData.city) {
         // استخدام أعمدة منفصلة للدولة والمدينة
-        location = await this.processCountryAndCity(cleanData.country, cleanData.city, settings.createMissingCities)
+        location = await this.processCountryAndCity(
+          cleanData.country,
+          cleanData.city,
+          settings.createMissingCities
+        );
       } else {
         // استخدام العنوان القديم كاحتياطي
-        location = await this.processLocation(cleanData.address, settings.createMissingCities)
+        location = await this.processLocation(
+          cleanData.address,
+          settings.createMissingCities
+        );
       }
-      
+
       if (!location) {
-        return { success: false, error: 'لا يمكن تحديد الموقع' }
+        return { success: false, error: "لا يمكن تحديد الموقع" };
       }
 
       // إنشاء الشركة
@@ -80,315 +102,432 @@ export class CompanyImportService {
         ...cleanData,
         categoryId: category.id,
         cityId: location.city.id,
-        countryId: location.country.id
-      })
+        countryId: location.country.id,
+      });
 
-      let imagesDownloaded = 0
-      let imagesFailed = 0
+      let imagesDownloaded = 0;
+      let imagesFailed = 0;
 
       // معالجة الصور
-      if (settings.downloadImages && cleanData.images.length > 0) {
-        const imageResults = await this.processImages(company.id, cleanData.images)
-        imagesDownloaded = imageResults.downloaded
-        imagesFailed = imageResults.failed
+      if (settings.downloadImages) {
+        // تنزيل صورة الهيرو إن وجدت وتعيينها كصورة رئيسية
+        let heroDownloaded = false;
+        if (cleanData.heroImage) {
+          try {
+            const heroResult = await this.imageDownloader.downloadAndSaveImage(
+              cleanData.heroImage,
+              company.id,
+              0
+            );
+            if (heroResult.success && heroResult.localPath) {
+              await prisma.company.update({
+                where: { id: company.id },
+                data: { mainImage: heroResult.localPath },
+              });
+              await prisma.companyImage.create({
+                data: {
+                  companyId: company.id,
+                  imageUrl: heroResult.localPath,
+                  sortOrder: 0,
+                  altText: "الصورة الرئيسية",
+                },
+              });
+              imagesDownloaded += 1;
+              heroDownloaded = true;
+            } else {
+              imagesFailed += 1;
+            }
+          } catch (error) {
+            console.error("فشل تنزيل صورة الهيرو:", error);
+            imagesFailed += 1;
+          }
+        }
+
+        // تنزيل باقي الصور مع تخطي تكرار صورة الهيرو
+        const remainingImages = cleanData.images.filter(
+          (url: string) => url && url !== cleanData.heroImage
+        );
+        if (remainingImages.length > 0) {
+          const imageResults = await this.processImages(
+            company.id,
+            remainingImages,
+            heroDownloaded ? 1 : 0
+          );
+          imagesDownloaded += imageResults.downloaded;
+          imagesFailed += imageResults.failed;
+        }
       }
 
       // معالجة المراجعات
       if (cleanData.reviews.length > 0) {
-        await this.processReviews(company.id, cleanData.reviews)
+        await this.processReviews(company.id, cleanData.reviews);
       }
 
       // معالجة العلامات
       if (cleanData.tags.length > 0) {
-        await this.processTags(company.id, cleanData.tags)
+        await this.processTags(company.id, cleanData.tags);
       }
 
       return {
         success: true,
         companyId: company.id,
         imagesDownloaded,
-        imagesFailed
-      }
-
+        imagesFailed,
+      };
     } catch (error) {
-      console.error(`خطأ في معالجة الصف ${rowNumber}:`, error)
+      console.error(`خطأ في معالجة الصف ${rowNumber}:`, error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'خطأ غير متوقع'
-      }
+        error: error instanceof Error ? error.message : "خطأ غير متوقع",
+      };
     }
   }
 
   private cleanRowData(row: any) {
     // استخراج التقييم من النص
-    const extractRating = (noteText: string): { rating: number, reviewCount: number } => {
-      if (!noteText) return { rating: 0, reviewCount: 0 }
-      
+    const extractRating = (
+      noteText: string
+    ): { rating: number; reviewCount: number } => {
+      if (!noteText) return { rating: 0, reviewCount: 0 };
+
       const ratingMatch = noteText.match(/(\d+\.?\d*)/);
       const countMatch = noteText.match(/\((\d+)\)/);
-      
+
       return {
         rating: ratingMatch ? parseFloat(ratingMatch[1]) : 0,
-        reviewCount: countMatch ? parseInt(countMatch[1]) : 0
-      }
-    }
+        reviewCount: countMatch ? parseInt(countMatch[1]) : 0,
+      };
+    };
 
     // استخراج الصور من النص
     const extractImages = (imagesText: string): string[] => {
-      if (!imagesText) return []
-      
+      if (!imagesText) return [];
+
       return imagesText
         .split(/[;,]/)
-        .map(url => url.trim())
-        .filter(url => url.startsWith('http'))
-        .slice(0, 10) // حد أقصى 10 صور
-    }
+        .map((url) => url.trim())
+        .filter((url) => url.startsWith("http"))
+        .slice(0, 10); // حد أقصى 10 صور
+    };
 
     // استخراج المراجعات من JSON
     const extractReviews = (reviewsText: string): any[] => {
-      if (!reviewsText || reviewsText === '[]') return []
-      
+      if (!reviewsText || reviewsText === "[]") return [];
+
       try {
-        const reviews = JSON.parse(reviewsText)
+        const reviews = JSON.parse(reviewsText);
         if (Array.isArray(reviews)) {
-          return reviews.map(review => ({
-            author: review.author || 'مجهول',
-            text: review.text || '',
+          return reviews.map((review) => ({
+            author: review.author || "مجهول",
+            text: review.text || "",
             rating: parseInt(review.rating) || 5,
-            date: review.date || new Date().toISOString()
-          }))
+            date: review.date || new Date().toISOString(),
+          }));
         }
-        return []
+        return [];
       } catch (error) {
-        console.warn('فشل في تحليل المراجعات:', error)
-        return []
+        console.warn("فشل في تحليل المراجعات:", error);
+        return [];
       }
-    }
+    };
 
     // استخراج الموقع الجغرافي من العنوان
-    const extractLocation = (address: string): { lat?: number, lng?: number } => {
-      if (!address) return {}
-      
+    const extractLocation = (
+      address: string
+    ): { lat?: number; lng?: number } => {
+      if (!address) return {};
+
       // البحث عن إحداثيات في العنوان (مثل G76C+V7F)
-      const coordMatch = address.match(/([A-Z]\d+[A-Z]\+[A-Z0-9]+)/)
+      const coordMatch = address.match(/([A-Z]\d+[A-Z]\+[A-Z0-9]+)/);
       if (coordMatch) {
         // يمكن تحويل Plus Code إلى إحداثيات لاحقاً
-        return {}
+        return {};
       }
-      
-      return {}
-    }
 
-    const ratingData = extractRating(row.Note)
-    
+      return {};
+    };
+
+    const ratingData = extractRating(row.Note);
+
     // استنتاج الوصف من الفئة إذا لم يكن متوفراً
-    const generateDescription = (companyName: string, category: string): string => {
+    const generateDescription = (
+      companyName: string,
+      category: string
+    ): string => {
       const categoryDescriptions: { [key: string]: string } = {
-        'software company': 'شركة متخصصة في تطوير البرمجيات والحلول التقنية',
-        'website designer': 'شركة متخصصة في تصميم وتطوير المواقع الإلكترونية',
-        'corporate office': 'مكتب شركة يقدم خدمات تجارية ومهنية',
-        'it company': 'شركة تقنية معلومات تقدم حلول تكنولوجية متطورة',
-        'restaurant': 'مطعم يقدم أشهى الأطباق والوجبات',
-        'cafe': 'مقهى يقدم المشروبات الساخنة والباردة',
-        'hospital': 'مستشفى يقدم خدمات الرعاية الصحية الشاملة',
-        'clinic': 'عيادة طبية متخصصة',
-        'pharmacy': 'صيدلية تقدم الأدوية والمستلزمات الطبية'
-      }
-      
-      const categoryKey = category.toLowerCase().trim()
-      const baseDescription = categoryDescriptions[categoryKey] || `شركة ${companyName} متخصصة في ${category}`
-      
-      return `${companyName} - ${baseDescription}`
-    }
+        "software company": "شركة متخصصة في تطوير البرمجيات والحلول التقنية",
+        "website designer": "شركة متخصصة في تصميم وتطوير المواقع الإلكترونية",
+        "corporate office": "مكتب شركة يقدم خدمات تجارية ومهنية",
+        "it company": "شركة تقنية معلومات تقدم حلول تكنولوجية متطورة",
+        restaurant: "مطعم يقدم أشهى الأطباق والوجبات",
+        cafe: "مقهى يقدم المشروبات الساخنة والباردة",
+        hospital: "مستشفى يقدم خدمات الرعاية الصحية الشاملة",
+        clinic: "عيادة طبية متخصصة",
+        pharmacy: "صيدلية تقدم الأدوية والمستلزمات الطبية",
+      };
+
+      const categoryKey = category.toLowerCase().trim();
+      const baseDescription =
+        categoryDescriptions[categoryKey] ||
+        `شركة ${companyName} متخصصة في ${category}`;
+
+      return `${companyName} - ${baseDescription}`;
+    };
 
     // استنتاج الخدمات من الفئة
     const generateServices = (category: string): string[] => {
       const categoryServices: { [key: string]: string[] } = {
-        'software company': ['تطوير البرمجيات', 'تطبيقات الويب', 'تطبيقات الهاتف', 'استشارات تقنية'],
-        'website designer': ['تصميم المواقع', 'تطوير المواقع', 'تحسين محركات البحث', 'استضافة المواقع'],
-        'restaurant': ['تناول في المطعم', 'خدمة التوصيل', 'المناسبات والحفلات', 'طعام طازج'],
-        'hospital': ['طب عام', 'طوارئ 24/7', 'فحوصات طبية', 'عمليات جراحية'],
-        'clinic': ['فحوصات طبية', 'استشارات طبية', 'علاج متخصص']
-      }
-      
-      return categoryServices[category.toLowerCase().trim()] || []
-    }
+        "software company": [
+          "تطوير البرمجيات",
+          "تطبيقات الويب",
+          "تطبيقات الهاتف",
+          "استشارات تقنية",
+        ],
+        "website designer": [
+          "تصميم المواقع",
+          "تطوير المواقع",
+          "تحسين محركات البحث",
+          "استضافة المواقع",
+        ],
+        restaurant: [
+          "تناول في المطعم",
+          "خدمة التوصيل",
+          "المناسبات والحفلات",
+          "طعام طازج",
+        ],
+        hospital: ["طب عام", "طوارئ 24/7", "فحوصات طبية", "عمليات جراحية"],
+        clinic: ["فحوصات طبية", "استشارات طبية", "علاج متخصص"],
+      };
 
-    const companyName = row.Nom?.trim() || ''
-    const category = row.Catégorie?.trim() || ''
-    
+      return categoryServices[category.toLowerCase().trim()] || [];
+    };
+
+    const companyName = row.Nom?.trim() || "";
+    const category = row.Catégorie?.trim() || "";
+
     // تنظيف وتحويل رقم الهاتف
     const formatPhoneNumber = (phone: string): string => {
-      if (!phone) return ''
-      
+      if (!phone) return "";
+
       // إزالة جميع الرموز غير الرقمية ما عدا +
-      let cleanPhone = phone.replace(/[^\d+]/g, '')
-      
+      let cleanPhone = phone.replace(/[^\d+]/g, "");
+
       // إزالة المسافات والرموز الخاصة
-      cleanPhone = cleanPhone.replace(/[\s\-\(\)\.\[\]]/g, '')
-      
+      cleanPhone = cleanPhone.replace(/[\s\-\(\)\.\[\]]/g, "");
+
       // التعامل مع الأرقام السورية
-      if (cleanPhone.startsWith('00963')) {
+      if (cleanPhone.startsWith("00963")) {
         // تحويل 00963 إلى +963
-        cleanPhone = '+963' + cleanPhone.substring(5)
-      } else if (cleanPhone.startsWith('0963')) {
+        cleanPhone = "+963" + cleanPhone.substring(5);
+      } else if (cleanPhone.startsWith("0963")) {
         // تحويل 0963 إلى +963
-        cleanPhone = '+963' + cleanPhone.substring(4)
-      } else if (cleanPhone.startsWith('963')) {
+        cleanPhone = "+963" + cleanPhone.substring(4);
+      } else if (cleanPhone.startsWith("963")) {
         // إضافة + في البداية
-        cleanPhone = '+' + cleanPhone
-      } else if (cleanPhone.startsWith('09') && cleanPhone.length === 10) {
+        cleanPhone = "+" + cleanPhone;
+      } else if (cleanPhone.startsWith("09") && cleanPhone.length === 10) {
         // رقم محلي سوري يبدأ بـ 09
-        cleanPhone = '+963' + cleanPhone.substring(1)
-      } else if (cleanPhone.startsWith('9') && cleanPhone.length === 9) {
+        cleanPhone = "+963" + cleanPhone.substring(1);
+      } else if (cleanPhone.startsWith("9") && cleanPhone.length === 9) {
         // رقم محلي سوري بدون الصفر
-        cleanPhone = '+963' + cleanPhone
-      } else if (!cleanPhone.startsWith('+') && cleanPhone.length >= 7) {
+        cleanPhone = "+963" + cleanPhone;
+      } else if (!cleanPhone.startsWith("+") && cleanPhone.length >= 7) {
         // تحديد البلد بناءً على طول الرقم وبدايته
-        if (cleanPhone.startsWith('07') && cleanPhone.length === 10) {
+        if (cleanPhone.startsWith("07") && cleanPhone.length === 10) {
           // أرقام أردنية
-          cleanPhone = '+962' + cleanPhone.substring(1)
-        } else if (cleanPhone.startsWith('05') && cleanPhone.length === 10) {
+          cleanPhone = "+962" + cleanPhone.substring(1);
+        } else if (cleanPhone.startsWith("05") && cleanPhone.length === 10) {
           // أرقام سعودية
-          cleanPhone = '+966' + cleanPhone.substring(1)
-        } else if ((cleanPhone.startsWith('50') || cleanPhone.startsWith('52') || cleanPhone.startsWith('54') || cleanPhone.startsWith('55') || cleanPhone.startsWith('56')) && cleanPhone.length === 9) {
+          cleanPhone = "+966" + cleanPhone.substring(1);
+        } else if (
+          (cleanPhone.startsWith("50") ||
+            cleanPhone.startsWith("52") ||
+            cleanPhone.startsWith("54") ||
+            cleanPhone.startsWith("55") ||
+            cleanPhone.startsWith("56")) &&
+          cleanPhone.length === 9
+        ) {
           // أرقام إماراتية
-          cleanPhone = '+971' + cleanPhone
+          cleanPhone = "+971" + cleanPhone;
         } else {
           // افتراضي: أرقام سورية
           if (cleanPhone.length === 7 || cleanPhone.length === 8) {
-            cleanPhone = '+96311' + cleanPhone // دمشق
+            cleanPhone = "+96311" + cleanPhone; // دمشق
           } else if (cleanPhone.length === 9) {
-            cleanPhone = '+963' + cleanPhone
-          } else if (cleanPhone.length === 10 && cleanPhone.startsWith('0')) {
-            cleanPhone = '+963' + cleanPhone.substring(1)
+            cleanPhone = "+963" + cleanPhone;
+          } else if (cleanPhone.length === 10 && cleanPhone.startsWith("0")) {
+            cleanPhone = "+963" + cleanPhone.substring(1);
           }
         }
       }
-      
+
       // التحقق من صحة الرقم النهائي
-      if (cleanPhone.length < 10 || !cleanPhone.startsWith('+')) {
-        console.log(`فشل في تحويل رقم الهاتف: "${phone}" -> "${cleanPhone}"`)
-        return phone // إرجاع الرقم الأصلي إذا فشل التحويل
+      if (cleanPhone.length < 10 || !cleanPhone.startsWith("+")) {
+        console.log(`فشل في تحويل رقم الهاتف: "${phone}" -> "${cleanPhone}"`);
+        return phone; // إرجاع الرقم الأصلي إذا فشل التحويل
       }
-      
+
       if (phone !== cleanPhone) {
-        console.log(`تم تحويل رقم الهاتف: "${phone}" -> "${cleanPhone}"`)
+        console.log(`تم تحويل رقم الهاتف: "${phone}" -> "${cleanPhone}"`);
       }
-      
-      return cleanPhone
-    }
-    
+
+      return cleanPhone;
+    };
+
     return {
       name: companyName,
       category: category,
-      address: row.Adresse?.trim() || '',
-      phone: formatPhoneNumber(row.Téléphone?.trim() || ''),
-      website: row.SiteWeb?.trim() || '',
+      address: row.Adresse?.trim() || "",
+      phone: formatPhoneNumber(row.Téléphone?.trim() || ""),
+      website: row.SiteWeb?.trim() || "",
       description: generateDescription(companyName, category),
       rating: ratingData.rating,
       reviewCount: ratingData.reviewCount,
-      images: extractImages(row.Images || row.Photos || ''),
-      heroImage: row.HeroImage?.trim() || '',
-      reviews: extractReviews(row.Reviews || '[]'),
+      images: extractImages(row.Images || row.Photos || ""),
+      heroImage: row.HeroImage?.trim() || "",
+      reviews: extractReviews(row.Reviews || "[]"),
       tags: [], // سيتم إضافتها لاحقاً
-      location: extractLocation(row.Adresse || ''),
-      email: '', // غير متوفر في البيانات الحالية
+      location: extractLocation(row.Adresse || ""),
+      email: "", // غير متوفر في البيانات الحالية
       services: generateServices(category),
       specialties: [], // يمكن إضافتها لاحقاً
       // إضافة دعم أعمدة منفصلة للدولة والمدينة
-      country: row.Country?.trim() || row.country?.trim() || '',
-      city: row.City?.trim() || row.city?.trim() || ''
-    }
+      country: row.Country?.trim() || row.country?.trim() || "",
+      city: row.City?.trim() || row.city?.trim() || "",
+    };
   }
 
-  private async checkDuplicateCompany(name: string, phone?: string, email?: string): Promise<boolean> {
+  private async checkDuplicateCompany(
+    name: string,
+    phone?: string,
+    email?: string
+  ): Promise<boolean> {
     const whereConditions: any[] = [
-      { name: { equals: name, mode: 'insensitive' } }
-    ]
+      { name: { equals: name, mode: "insensitive" } },
+    ];
 
     if (phone) {
-      whereConditions.push({ phone })
+      whereConditions.push({ phone });
     }
 
     if (email) {
-      whereConditions.push({ email })
+      whereConditions.push({ email });
     }
 
     const existingCompany = await prisma.company.findFirst({
       where: {
-        OR: whereConditions
-      }
-    })
+        OR: whereConditions,
+      },
+    });
 
-    return !!existingCompany
+    return !!existingCompany;
   }
 
   private async validateData(data: any, settings: ImportSettings) {
-    return this.validator.validateCompanyData(data, settings)
+    return this.validator.validateCompanyData(data, settings);
   }
 
   private async processCategory(categoryName: string, createMissing: boolean) {
-    return this.categoryMapper.mapCategory(categoryName, createMissing)
+    return this.categoryMapper.mapCategory(categoryName, createMissing);
   }
 
   private async processLocation(address: string, createMissing: boolean) {
-    return this.locationMapper.mapLocation(address, createMissing)
+    return this.locationMapper.mapLocation(address, createMissing);
   }
 
-  private async processCountryAndCity(countryName: string, cityName: string, createMissing: boolean) {
-    return this.locationMapper.mapCountryAndCity(countryName, cityName, createMissing)
+  private async processCountryAndCity(
+    countryName: string,
+    cityName: string,
+    createMissing: boolean
+  ) {
+    return this.locationMapper.mapCountryAndCity(
+      countryName,
+      cityName,
+      createMissing
+    );
   }
 
   private async createCompany(data: any) {
     // إنشاء slug فريد بالإنجليزية فقط (نفس منطق صفحة إضافة الشركة)
     const generateSlugFromName = (name: string) => {
       const arabicToEnglish: { [key: string]: string } = {
-        'ا': 'a', 'أ': 'a', 'إ': 'i', 'آ': 'aa',
-        'ب': 'b', 'ت': 't', 'ث': 'th', 'ج': 'j',
-        'ح': 'h', 'خ': 'kh', 'د': 'd', 'ذ': 'dh',
-        'ر': 'r', 'ز': 'z', 'س': 's', 'ش': 'sh',
-        'ص': 's', 'ض': 'd', 'ط': 't', 'ظ': 'z',
-        'ع': 'a', 'غ': 'gh', 'ف': 'f', 'ق': 'q',
-        'ك': 'k', 'ل': 'l', 'م': 'm', 'ن': 'n',
-        'ه': 'h', 'و': 'w', 'ي': 'y', 'ى': 'a',
-        'ة': 'h', 'ء': 'a', 'ئ': 'e', 'ؤ': 'o'
+        ا: "a",
+        أ: "a",
+        إ: "i",
+        آ: "aa",
+        ب: "b",
+        ت: "t",
+        ث: "th",
+        ج: "j",
+        ح: "h",
+        خ: "kh",
+        د: "d",
+        ذ: "dh",
+        ر: "r",
+        ز: "z",
+        س: "s",
+        ش: "sh",
+        ص: "s",
+        ض: "d",
+        ط: "t",
+        ظ: "z",
+        ع: "a",
+        غ: "gh",
+        ف: "f",
+        ق: "q",
+        ك: "k",
+        ل: "l",
+        م: "m",
+        ن: "n",
+        ه: "h",
+        و: "w",
+        ي: "y",
+        ى: "a",
+        ة: "h",
+        ء: "a",
+        ئ: "e",
+        ؤ: "o",
       };
-      
+
       let result = name.toLowerCase().trim();
-      
+
       // تحويل "ال" التعريف
-      result = result.replace(/ال/g, 'al-');
-      
-        // تحويل الأحرف العربية
-        Object.entries(arabicToEnglish).forEach(([arabic, english]) => {
-          const regex = new RegExp(arabic, 'g');
-          result = result.replace(regex, english);
-        });
-      
-      return result
-        .replace(/\s+/g, '-')
-        .replace(/[^\w\-]/g, '')
-        .replace(/\-+/g, '-')
-        .replace(/^-+/, '')
-        .replace(/-+$/, '') || 'company';
+      result = result.replace(/ال/g, "al-");
+
+      // تحويل الأحرف العربية
+      Object.entries(arabicToEnglish).forEach(([arabic, english]) => {
+        const regex = new RegExp(arabic, "g");
+        result = result.replace(regex, english);
+      });
+
+      return (
+        result
+          .replace(/\s+/g, "-")
+          .replace(/[^\w\-]/g, "")
+          .replace(/\-+/g, "-")
+          .replace(/^-+/, "")
+          .replace(/-+$/, "") || "company"
+      );
     };
 
     const baseSlug = generateSlugFromName(data.name);
-    let slug = baseSlug
-    let counter = 1
+    let slug = baseSlug;
+    let counter = 1;
 
     while (await prisma.company.findUnique({ where: { slug } })) {
-      slug = `${baseSlug}-${counter}`
-      counter++
+      slug = `${baseSlug}-${counter}`;
+      counter++;
     }
 
     return prisma.company.create({
       data: {
         name: data.name,
         slug,
-        description: data.description || `شركة ${data.name} متخصصة في ${data.category}`,
-        shortDescription: data.description ? data.description.substring(0, 150) : undefined,
+        description:
+          data.description || `شركة ${data.name} متخصصة في ${data.category}`,
+        shortDescription: data.description
+          ? data.description.substring(0, 150)
+          : undefined,
         categoryId: data.categoryId,
         cityId: data.cityId,
         countryId: data.countryId,
@@ -400,98 +539,115 @@ export class CompanyImportService {
         reviewsCount: data.reviewCount || 0,
         latitude: data.location.lat || null,
         longitude: data.location.lng || null,
-        mainImage: data.heroImage || (data.images.length > 0 ? data.images[0] : null),
+        mainImage:
+          data.heroImage || (data.images.length > 0 ? data.images[0] : null),
         services: data.services,
         specialties: data.specialties,
         isActive: true,
         isVerified: false,
-        isFeatured: false
-      }
-    })
+        isFeatured: false,
+      },
+    });
   }
 
-  private async processImages(companyId: string, imageUrls: string[]) {
-    let downloaded = 0
-    let failed = 0
+  private async processImages(
+    companyId: string,
+    imageUrls: string[],
+    startIndex: number = 0
+  ) {
+    let downloaded = 0;
+    let failed = 0;
 
     for (let index = 0; index < imageUrls.length; index++) {
-      const url = imageUrls[index]
+      const url = imageUrls[index];
       try {
-        const result = await this.imageDownloader.downloadAndSaveImage(url, companyId, index)
+        const result = await this.imageDownloader.downloadAndSaveImage(
+          url,
+          companyId,
+          startIndex + index
+        );
         if (result.success) {
           await prisma.companyImage.create({
             data: {
               companyId,
               imageUrl: result.localPath!,
-              sortOrder: index,
-              altText: `صورة الشركة ${index + 1}`
-            }
-          })
-          downloaded++
+              sortOrder: startIndex + index,
+              altText: `صورة الشركة ${index + 1}`,
+            },
+          });
+          downloaded++;
         } else {
-          failed++
+          failed++;
         }
       } catch (error) {
-        console.error(`فشل في تحميل الصورة ${url}:`, error)
-        failed++
+        console.error(`فشل في تحميل الصورة ${url}:`, error);
+        failed++;
       }
     }
 
-    return { downloaded, failed }
+    return { downloaded, failed };
   }
 
   private async processReviews(companyId: string, reviews: any[]) {
-    for (const review of reviews.slice(0, 10)) { // حد أقصى 10 مراجعات
+    for (const review of reviews.slice(0, 10)) {
+      // حد أقصى 10 مراجعات
       try {
         // تحويل التاريخ من النص إلى تاريخ صحيح
-        let reviewDate = new Date()
+        let reviewDate = new Date();
         if (review.date) {
           // معالجة تواريخ مختلفة مثل "2 years ago", "8 years ago"
-          const dateText = review.date.toLowerCase()
-          if (dateText.includes('year')) {
-            const years = parseInt(dateText.match(/\d+/)?.[0] || '0')
-            reviewDate = new Date()
-            reviewDate.setFullYear(reviewDate.getFullYear() - years)
-          } else if (dateText.includes('month')) {
-            const months = parseInt(dateText.match(/\d+/)?.[0] || '0')
-            reviewDate = new Date()
-            reviewDate.setMonth(reviewDate.getMonth() - months)
-          } else if (dateText.includes('day')) {
-            const days = parseInt(dateText.match(/\d+/)?.[0] || '0')
-            reviewDate = new Date()
-            reviewDate.setDate(reviewDate.getDate() - days)
+          const dateText = review.date.toLowerCase();
+          if (dateText.includes("year")) {
+            const years = parseInt(dateText.match(/\d+/)?.[0] || "0");
+            reviewDate = new Date();
+            reviewDate.setFullYear(reviewDate.getFullYear() - years);
+          } else if (dateText.includes("month")) {
+            const months = parseInt(dateText.match(/\d+/)?.[0] || "0");
+            reviewDate = new Date();
+            reviewDate.setMonth(reviewDate.getMonth() - months);
+          } else if (dateText.includes("day")) {
+            const days = parseInt(dateText.match(/\d+/)?.[0] || "0");
+            reviewDate = new Date();
+            reviewDate.setDate(reviewDate.getDate() - days);
           } else {
             // محاولة تحويل التاريخ مباشرة
-            const parsedDate = new Date(review.date)
+            const parsedDate = new Date(review.date);
             if (!isNaN(parsedDate.getTime())) {
-              reviewDate = parsedDate
+              reviewDate = parsedDate;
             }
           }
         }
 
         // التأكد من صحة التقييم
-        let rating = 5
-        if (review.rating && typeof review.rating === 'number' && review.rating >= 1 && review.rating <= 5) {
-          rating = Math.round(review.rating)
+        let rating = 5;
+        if (
+          review.rating &&
+          typeof review.rating === "number" &&
+          review.rating >= 1 &&
+          review.rating <= 5
+        ) {
+          rating = Math.round(review.rating);
         }
 
         // إنشاء عنوان من النص إذا لم يكن موجوداً
-        const title = review.title || (review.text ? review.text.substring(0, 50) + '...' : 'مراجعة عامة')
+        const title =
+          review.title ||
+          (review.text ? review.text.substring(0, 50) + "..." : "مراجعة عامة");
 
         await prisma.review.create({
           data: {
             companyId,
-            userName: review.author || 'مجهول',
+            userName: review.author || "مجهول",
             rating,
             title,
-            comment: review.text || '',
+            comment: review.text || "",
             isApproved: true,
             isVerified: false,
-            createdAt: reviewDate
-          }
-        })
+            createdAt: reviewDate,
+          },
+        });
       } catch (error) {
-        console.error('فشل في إضافة المراجعة:', error)
+        console.error("فشل في إضافة المراجعة:", error);
       }
     }
 
@@ -499,29 +655,30 @@ export class CompanyImportService {
     const reviewsStats = await prisma.review.aggregate({
       where: { companyId },
       _avg: { rating: true },
-      _count: { id: true }
-    })
+      _count: { id: true },
+    });
 
     await prisma.company.update({
       where: { id: companyId },
       data: {
         rating: reviewsStats._avg.rating || 0,
-        reviewsCount: reviewsStats._count.id || 0
-      }
-    })
+        reviewsCount: reviewsStats._count.id || 0,
+      },
+    });
   }
 
   private async processTags(companyId: string, tags: string[]) {
-    for (const tag of tags.slice(0, 10)) { // حد أقصى 10 علامات
+    for (const tag of tags.slice(0, 10)) {
+      // حد أقصى 10 علامات
       try {
         await prisma.companyTag.create({
           data: {
             companyId,
-            tagName: tag.trim()
-          }
-        })
+            tagName: tag.trim(),
+          },
+        });
       } catch (error) {
-        console.error('فشل في إضافة العلامة:', error)
+        console.error("فشل في إضافة العلامة:", error);
       }
     }
   }

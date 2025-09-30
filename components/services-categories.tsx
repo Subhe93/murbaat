@@ -186,7 +186,7 @@ export function ServicesCategories({ categories }: ServiceCategoriesProps) {
           return (
             <Link
               key={category.slug}
-              href={`/sy/category/${category.slug}`}
+              href={`/country/sy/category/${category.slug}`}
               className="group bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-3 hover:rotate-1 p-6 text-center animate-fade-in-up"
               style={{ animationDelay: `${displayCategories.indexOf(category) * 100}ms` }}
             >

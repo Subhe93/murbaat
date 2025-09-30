@@ -9,7 +9,7 @@ interface ClientSideDateProps {
 export function ClientSideDate({ date, locale = 'ar-SA', className }: ClientSideDateProps) {
   return (
     <span className={className} suppressHydrationWarning>
-      {new Date(date).toLocaleDateString(locale)}
+      {new Date(date).toLocaleDateString()}
     </span>
   );
 }

@@ -62,7 +62,7 @@ export function CompaniesGrid({ companies, pagination }: CompaniesGridProps) {
         {companies.map((company) => (
           <Link
             key={company.slug}
-            href={`/${company.country?.code || ''}/city/${company.city.slug}/company/${company.slug}`}
+            href={`/country/${company.country?.code || ''}/city/${company.city.slug}/company/${company.slug}`}
             className="group bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 overflow-hidden"
           >
             <div className="relative h-48 overflow-hidden">

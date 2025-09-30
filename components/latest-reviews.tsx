@@ -78,7 +78,7 @@ export function LatestReviews({ reviews }: LatestReviewsProps) {
               </div>
               <div className="flex-1">
                 <Link
-                  href={`/${review.company.city.country.code}/city/${review.company.city.slug}/company/${review.company.slug}`}
+                  href={`/country/${review.company.city.country.code}/city/${review.company.city.slug}/company/${review.company.slug}`}
                   className="font-bold text-gray-900 dark:text-white hover:text-brand-green dark:hover:text-brand-green transition-colors"
                 >
                   {review.company.name}

@@ -196,7 +196,7 @@ export default async function CompanyPage({
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link 
-                  href={`/${company.country.code}/city/${company.city.slug}`}
+                  href={`/country/${company.country.code}/city/${company.city.slug}`}
                   className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
                 >
                   تصفح شركات أخرى في {company.city.name}
@@ -288,13 +288,13 @@ export default async function CompanyPage({
               <BreadcrumbSeparator />
               <BreadcrumbItem>
                 <BreadcrumbLink asChild>
-                  <Link href={`/${company.country.code}`}>{company.country.name}</Link>
+                  <Link href={`/country/${company.country.code}`}>{company.country.name}</Link>
                 </BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
                 <BreadcrumbLink asChild>
-                  <Link href={`/${company.country.code}/city/${company.city.slug}`}>{company.city.name}</Link>
+                  <Link href={`/country/${company.country.code}/city/${company.city.slug}`}>{company.city.name}</Link>
                 </BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator />

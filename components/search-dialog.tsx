@@ -108,7 +108,7 @@ export function SearchDialog({ isOpen, onClose }: SearchDialogProps) {
                 {results.countries.map((country) => (
                   <Link
                     key={country.code}
-                    href={`/${country.code}`}
+                    href={`/country/${country.code}`}
                     onClick={handleClose}
                     className="flex items-center space-x-3 space-x-reverse p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
                   >
@@ -131,7 +131,7 @@ export function SearchDialog({ isOpen, onClose }: SearchDialogProps) {
                 {results.cities.map((city) => (
                   <Link
                     key={`${city.country}-${city.slug}`}
-                    href={`/${city.country}/city/${city.slug}`}
+                    href={`/country/${city.country}/city/${city.slug}`}
                     onClick={handleClose}
                     className="flex items-center space-x-3 space-x-reverse p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
                   >
@@ -156,7 +156,7 @@ export function SearchDialog({ isOpen, onClose }: SearchDialogProps) {
                 {results.companies.map((company) => (
                   <Link
                     key={company.slug}
-                    href={`/${company.country}/city/${company.city}/company/${company.slug}`}
+                    href={`/country/${company.country}/city/${company.city}/company/${company.slug}`}
                     onClick={handleClose}
                     className="flex items-center space-x-3 space-x-reverse p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
                   >

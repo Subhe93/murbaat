@@ -48,7 +48,7 @@ export function CountriesGrid({ countries }: CountriesGridProps) {
         {countries.map((country) => (
           <Link
             key={country.code}
-            href={`/${country.code}`}
+            href={`/country/${country.code}`}
             className="group bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-4 hover:rotate-1 overflow-hidden animate-fade-in-up"
             style={{ animationDelay: `${countries.indexOf(country) * 100}ms` }}
           >

@@ -24,9 +24,9 @@ export function Footer() {
             <h3 className="text-lg font-bold mb-4">روابط سريعة</h3>
             <ul className="space-y-2">
               <li><Link href="/" className="text-gray-300 hover:text-white transition-colors">الرئيسية</Link></li>
-              <li><Link href="/sy" className="text-gray-300 hover:text-white transition-colors">سوريا</Link></li>
-              <li><Link href="/lb" className="text-gray-300 hover:text-white transition-colors">لبنان</Link></li>
-              <li><Link href="/jo" className="text-gray-300 hover:text-white transition-colors">الأردن</Link></li>
+              <li><Link href="/country/sy" className="text-gray-300 hover:text-white transition-colors">سوريا</Link></li>
+              <li><Link href="/country/lb" className="text-gray-300 hover:text-white transition-colors">لبنان</Link></li>
+              <li><Link href="/country/jo" className="text-gray-300 hover:text-white transition-colors">الأردن</Link></li>
               <li><Link href="/about" className="text-gray-300 hover:text-white transition-colors">من نحن</Link></li>
               <li><Link href="/add-company" className="text-gray-300 hover:text-white transition-colors">أضف شركتك</Link></li>
             </ul>
@@ -36,11 +36,11 @@ export function Footer() {
           <div>
             <h3 className="text-lg font-bold mb-4">الفئات</h3>
             <ul className="space-y-2">
-              <li><Link href="/sy/category/technology" className="text-gray-300 hover:text-white transition-colors">التكنولوجيا</Link></li>
-              <li><Link href="/sy/category/healthcare" className="text-gray-300 hover:text-white transition-colors">الرعاية الصحية</Link></li>
-              <li><Link href="/sy/category/education" className="text-gray-300 hover:text-white transition-colors">التعليم</Link></li>
-              <li><Link href="/sy/category/finance" className="text-gray-300 hover:text-white transition-colors">المالية</Link></li>
-              <li><Link href="/sy/category/food" className="text-gray-300 hover:text-white transition-colors">الأغذية</Link></li>
+              <li><Link href="/country/sy/category/technology" className="text-gray-300 hover:text-white transition-colors">التكنولوجيا</Link></li>
+              <li><Link href="/country/sy/category/healthcare" className="text-gray-300 hover:text-white transition-colors">الرعاية الصحية</Link></li>
+              <li><Link href="/country/sy/category/education" className="text-gray-300 hover:text-white transition-colors">التعليم</Link></li>
+              <li><Link href="/country/sy/category/finance" className="text-gray-300 hover:text-white transition-colors">المالية</Link></li>
+              <li><Link href="/country/sy/category/food" className="text-gray-300 hover:text-white transition-colors">الأغذية</Link></li>
             </ul>
           </div>
 
