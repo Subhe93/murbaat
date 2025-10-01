@@ -165,6 +165,14 @@ export class CompanyImportService {
           );
           imagesDownloaded += imageResults.downloaded;
           imagesFailed += imageResults.failed;
+
+          // تعيين الصورة الرئيسية من أول صورة محلية في حال فشل تحميل الهيرو
+          if (!heroDownloaded && imageResults.firstLocalPath) {
+            await prisma.company.update({
+              where: { id: company.id },
+              data: { mainImage: imageResults.firstLocalPath },
+            });
+          }
         }
       }
 
@@ -537,8 +545,8 @@ export class CompanyImportService {
         reviewsCount: data.reviewCount || 0,
         latitude: data.location.lat || null,
         longitude: data.location.lng || null,
-        mainImage:
-          data.heroImage || (data.images.length > 0 ? data.images[0] : null),
+        // تعيين لاحق للصورة الرئيسية بعد التنزيل المحلي
+        mainImage: null,
         services: data.services,
         specialties: data.specialties,
         isActive: true,
@@ -555,6 +563,7 @@ export class CompanyImportService {
   ) {
     let downloaded = 0;
     let failed = 0;
+    let firstLocalPath: string | null = null;
 
     for (let index = 0; index < imageUrls.length; index++) {
       const url = imageUrls[index];
@@ -573,6 +582,9 @@ export class CompanyImportService {
               altText: `صورة الشركة ${index + 1}`,
             },
           });
+          if (!firstLocalPath && result.localPath) {
+            firstLocalPath = result.localPath;
+          }
           downloaded++;
         } else {
           failed++;
@@ -583,7 +595,7 @@ export class CompanyImportService {
       }
     }
 
-    return { downloaded, failed };
+    return { downloaded, failed, firstLocalPath };
   }
 
   private async processReviews(companyId: string, reviews: any[]) {
