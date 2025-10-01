@@ -231,7 +231,7 @@ export default function AdminReviewsPage() {
                           <Badge variant={review.isApproved ? 'default' : 'secondary'}>{review.isApproved ? 'موافق عليها' : 'معلقة'}</Badge>
                         </div>
                         <p className="text-sm text-gray-600 dark:text-gray-400 mb-2 line-clamp-2">{review.comment}</p>
-                        <div className="text-xs text-gray-500">بواسطة {review.user?.name || review.userName || 'زائر'} • {review.company.name} • {new Date(review.createdAt).toLocaleDateString('ar-SA')}</div>
+                        <div className="text-xs text-gray-500">بواسطة {review.user?.name || review.userName || 'زائر'} • {review.company.name} • {new Date(review.createdAt).toLocaleDateString( )}</div>
                       </div>
                     </div>
                     <div className="flex items-center space-x-2 space-x-reverse ml-4">

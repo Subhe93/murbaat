@@ -154,7 +154,7 @@ export function CompanyHeader({ company }: CompanyHeaderProps) {
                 )}
                 
                 <Button asChild variant="outline" size="lg" className="bg-white/20 backdrop-blur-md hover:bg-white/30 text-white border-white/40 hover:border-white/60 shadow-lg transition-all duration-300 px-6 py-3">
-                  <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`} target="_blank" rel="noopener noreferrer">
+                  <a href={`https://www.google.com/maps/place/${encodeURIComponent(address)}`} target="_blank" rel="noopener noreferrer">
                     <Navigation className="h-5 w-5 ml-2" />
                     الاتجاهات
                   </a>

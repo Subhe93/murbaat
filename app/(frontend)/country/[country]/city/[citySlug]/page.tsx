@@ -6,6 +6,11 @@ import { CityHeader } from '@/components/city-header';
 import { CompaniesGrid } from '@/components/companies-grid';
 import { AdvancedSearchFilters } from '@/components/advanced-search-filters';
 import { getCityBySlug, getCompanies } from '@/lib/database/queries';
+import { 
+  generateItemListSchema,
+  generateOrganizationSchema,
+  generateWebsiteSchema
+} from '@/lib/seo/schema-generator';
 import {
   Breadcrumb,
   BreadcrumbList,
@@ -103,8 +108,78 @@ export default async function CityPage({ params, searchParams }: CityPageProps) 
 
     const companiesResult = await getCompanies(filters);
 
+    // Generate schemas for the city page
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://murabaat.com';
+    const itemListSchema = generateItemListSchema(
+      companiesResult.data,
+      baseUrl,
+      `الشركات في ${cityData.name}`,
+      `دليل شامل للشركات والخدمات في ${cityData.name}، ${cityData.country.name}`
+    );
+    const organizationSchema = generateOrganizationSchema(baseUrl);
+    const websiteSchema = generateWebsiteSchema(baseUrl);
+    
+    // Generate breadcrumb schema for city page
+    const breadcrumbSchema = {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "item": baseUrl,
+          "name": "الرئيسية"
+        },
+        {
+          "@type": "ListItem", 
+          "position": 2,
+          "item": `${baseUrl}/country/${cityData.country.code}`,
+          "name": cityData.country.name
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "item": `${baseUrl}/country/${cityData.country.code}/city/${cityData.slug}`,
+          "name": cityData.name
+        }
+      ]
+    };
+
     return (
-      <div className="container mx-auto px-4 py-8">
+      <>
+        {/* JSON-LD Schema للقائمة */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(itemListSchema),
+          }}
+        />
+
+        {/* JSON-LD Schema للـ BreadcrumbList */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(breadcrumbSchema),
+          }}
+        />
+
+        {/* JSON-LD Schema للمنظمة */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(organizationSchema),
+          }}
+        />
+
+        {/* JSON-LD Schema للموقع */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(websiteSchema),
+          }}
+        />
+
+        <div className="container mx-auto px-4 py-8">
         <Breadcrumb className="mb-6">
           <BreadcrumbList>
             <BreadcrumbItem>
@@ -151,6 +226,7 @@ export default async function CityPage({ params, searchParams }: CityPageProps) 
           />
         </div>
       </div>
+      </>
     );
 
   } catch (error) {

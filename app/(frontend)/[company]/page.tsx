@@ -16,6 +16,13 @@ import { SimilarCompanies } from '@/components/similar-companies';
 import { CompanySearch } from '@/components/company-search';
 import type { CompanyWithRelations } from '@/lib/types/database';
 import type { Company } from '@/lib/data';
+import { 
+  generateCompanySchema, 
+  generateBreadcrumbSchema, 
+  generateOrganizationSchema, 
+  generateWebsiteSchema,
+  generateItemListSchema
+} from '@/lib/seo/schema-generator';
 import {
   Breadcrumb,
   BreadcrumbList,
@@ -226,71 +233,19 @@ export default async function CompanyPage({
     });
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://murabaat.com';
 
-    // JSON-LD Schema للشركة (SEO)
-    const jsonLd = {
-      "@context": "https://schema.org",
-      "@type": "LocalBusiness",
-      "name": company.name,
-      "description": company.description,
-      "image": baseUrl +
-                company.mainImage, 
-      "url": company.website,
-      "telephone": company.phone,
-      "email": company.email,
-      "address": {
-        "@type": "PostalAddress",
-        "streetAddress": company.address,
-        "addressLocality": company.city.name,
-        "addressCountry": company.country.name
-      },
-      "geo": company.latitude && company.longitude ? {
-        "@type": "GeoCoordinates",
-        "latitude": company.latitude,
-        "longitude": company.longitude
-      } : undefined,
-      "aggregateRating": company.reviewsCount > 0 ? {
-        "@type": "AggregateRating",
-        "ratingValue": company.rating,
-        "reviewCount": company.reviewsCount,
-        "bestRating": 5,
-        "worstRating": 1
-      } : undefined,
-      "priceRange": "$$",
-      "openingHours": company.workingHours.filter(wh => !wh.isClosed).map(wh => 
-        `${wh.dayOfWeek} ${wh.openTime}-${wh.closeTime}`
-      )
-    };
-
-    // JSON-LD Schema للـ BreadcrumbList (SEO)
-    const breadcrumbJsonLd = {
-      "@context": "https://schema.org",
-      "@type": "BreadcrumbList",
-      "itemListElement": [
-        {
-          "@type": "ListItem",
-          "position": 1,
-          "item": baseUrl,
-          "name": "الرئيسية"
-        },
-        {
-          "@type": "ListItem",
-          "position": 2,
-          "item": `${baseUrl}/country/${company.country.code}`,
-          "name": company.country.name
-        },
-        {
-          "@type": "ListItem",
-          "position": 3,
-          "item": `${baseUrl}/country/${company.country.code}/city/${company.city.slug}`,
-          "name": company.city.name
-        },
-        {
-          "@type": "ListItem",
-          "position": 4,
-          "name": company.name
-        }
-      ]
-    };
+    // Generate dynamic schemas based on company type
+    const companySchema = generateCompanySchema(company, baseUrl);
+    const breadcrumbSchema = generateBreadcrumbSchema(company, baseUrl);
+    const organizationSchema = generateOrganizationSchema(baseUrl);
+    const websiteSchema = generateWebsiteSchema(baseUrl);
+    
+    // Generate ItemList schema for similar companies if available
+    const similarCompaniesSchema = similarCompanies.length > 0 ? generateItemListSchema(
+      similarCompanies as unknown as CompanyWithRelations[],
+      baseUrl,
+      `شركات مشابهة لـ ${company.name}`,
+      `شركات ${company.category.name} مشابهة في ${company.city.name}`
+    ) : null;
 
     return (
       <>
@@ -298,7 +253,7 @@ export default async function CompanyPage({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify(jsonLd),
+            __html: JSON.stringify(companySchema),
           }}
         />
         
@@ -306,9 +261,35 @@ export default async function CompanyPage({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify(breadcrumbJsonLd),
+            __html: JSON.stringify(breadcrumbSchema),
           }}
         />
+
+        {/* JSON-LD Schema للمنظمة */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(organizationSchema),
+          }}
+        />
+
+        {/* JSON-LD Schema للموقع */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(websiteSchema),
+          }}
+        />
+
+        {/* JSON-LD Schema للشركات المشابهة */}
+        {similarCompaniesSchema && (
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify(similarCompaniesSchema),
+            }}
+          />
+        )}
 
         <div className="container mx-auto px-4 py-8">
           <Breadcrumb className="mb-6">

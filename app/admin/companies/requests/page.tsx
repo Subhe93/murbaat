@@ -155,7 +155,7 @@ export default function CompanyRequestsPage() {
                   </Badge>
                 </div>
                 <CardDescription>
-                  تم الإرسال في {new Date(request.createdAt).toLocaleDateString('ar-SA')}
+                  تم الإرسال في {new Date(request.createdAt).toLocaleDateString( )}
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-6">

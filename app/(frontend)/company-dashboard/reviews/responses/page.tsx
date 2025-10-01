@@ -177,7 +177,7 @@ export default function ReviewResponsesPage() {
                         {renderStars(review.rating)}
                       </div>
                       <span className="text-sm text-gray-500">
-                        {new Date(review.createdAt).toLocaleDateString('ar-SA')}
+                        {new Date(review.createdAt).toLocaleDateString( )}
                       </span>
                     </div>
                   </div>
@@ -262,7 +262,7 @@ export default function ReviewResponsesPage() {
                         {renderStars(review.rating)}
                       </div>
                       <span className="text-sm text-gray-500">
-                        {new Date(review.createdAt).toLocaleDateString('ar-SA')}
+                        {new Date(review.createdAt).toLocaleDateString( )}
                       </span>
                     </div>
                   </div>
@@ -291,7 +291,7 @@ export default function ReviewResponsesPage() {
                           {review.replies?.[0]?.content}
                         </p>
                         <span className="text-xs text-blue-600">
-                          {review.replies?.[0]?.createdAt && new Date(review.replies[0].createdAt).toLocaleDateString('ar-SA')}
+                          {review.replies?.[0]?.createdAt && new Date(review.replies[0].createdAt).toLocaleDateString( )}
                         </span>
                       </div>
                     </div>

@@ -156,7 +156,7 @@ export function AdminReviewsManagement() {
                           <h4 className="font-semibold text-gray-900 dark:text-white">{review.userName}</h4>
                           {getStatusBadge(review.isApproved)}
                         </div>
-                        <span className="text-sm text-gray-500">{new Date(review.createdAt).toLocaleDateString('ar-SA')}</span>
+                        <span className="text-sm text-gray-500">{new Date(review.createdAt).toLocaleDateString( )}</span>
                       </div>
                       <div className="flex items-center space-x-2 space-x-reverse mb-2">
                         {[...Array(5)].map((_, i) => <Star key={i} className={`h-4 w-4 ${i < review.rating ? 'text-yellow-500 fill-current' : 'text-gray-300'}`} />)}

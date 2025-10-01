@@ -455,7 +455,7 @@ export default function GalleryPage() {
                         <>
                           <h3 className="font-semibold text-sm mb-1">{image.altText}</h3>
                           <p className="text-gray-600 text-xs mb-2">
-                            {new Date(image.createdAt).toLocaleDateString('ar-SA')}
+                            {new Date(image.createdAt).toLocaleDateString()}
                           </p>
                           <div className="flex items-center justify-between">
                             <Badge variant="outline" className="text-xs">
@@ -526,7 +526,7 @@ export default function GalleryPage() {
                 className="w-full max-h-96 object-contain rounded-lg"
               />
               <div className="space-y-2">
-                <p className="text-gray-600">تاريخ الإضافة: {new Date(selectedImage.createdAt).toLocaleDateString('ar-SA')}</p>
+                <p className="text-gray-600">تاريخ الإضافة: {new Date(selectedImage.createdAt).toLocaleDateString()}</p>
                 <div className="flex gap-2">
                   <Badge variant="outline">
                     ترتيب: {selectedImage.sortOrder}

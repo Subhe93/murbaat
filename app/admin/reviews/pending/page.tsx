@@ -313,7 +313,7 @@ export default function AdminPendingReviewsPage() {
                             <span>{review.company.name}</span>
                           </div>
                           <span>•</span>
-                          <span>{new Date(review.createdAt).toLocaleDateString('ar-SA')}</span>
+                          <span>{new Date(review.createdAt).toLocaleDateString( )}</span>
                         </div>
 
                         <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 mb-4">

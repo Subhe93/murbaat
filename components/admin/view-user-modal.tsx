@@ -133,7 +133,7 @@ export function ViewUserModal({ user, open, onOpenChange, onLinkCompany, onOwner
   }
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('ar-SA', {
+    return new Date(dateString).toLocaleDateString( , {
       year: 'numeric',
       month: 'long',
       day: 'numeric',

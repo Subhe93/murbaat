@@ -42,21 +42,22 @@ export class CompanyImportService {
 
       // التحقق من البيانات الأساسية
       if (!cleanData.name || !cleanData.name.trim()) {
-        return { success: false, error: "اسم الشركة مطلوب" };
+        return {
+          success: false,
+          error: "اسم الشركة مطلوب - لا يمكن إنشاء شركة بدون اسم",
+        };
       }
 
       // التحقق من الشركات المكررة
       if (settings.skipDuplicates) {
         const existingCompany = await this.checkDuplicateCompany(
-          cleanData.name,
-          cleanData.phone,
-          cleanData.email
+          cleanData.name
         );
         if (existingCompany) {
           return {
             success: false,
             skipped: true,
-            error: "الشركة موجودة مسبقاً",
+            error: `الشركة موجودة مسبقاً - تم العثور على شركة بنفس الاسم أو رقم الهاتف في قاعدة البيانات`,
           };
         }
       }
@@ -64,7 +65,10 @@ export class CompanyImportService {
       // التحقق من صحة البيانات
       const validationResult = await this.validateData(cleanData, settings);
       if (!validationResult.isValid) {
-        return { success: false, error: validationResult.error };
+        return {
+          success: false,
+          error: `فشل التحقق من البيانات - ${validationResult.error}`,
+        };
       }
 
       // معالجة الفئة
@@ -73,7 +77,10 @@ export class CompanyImportService {
         settings.createMissingCategories
       );
       if (!category) {
-        return { success: false, error: "فئة غير صالحة أو غير موجودة" };
+        return {
+          success: false,
+          error: `فئة غير صالحة أو غير موجودة - الفئة "${cleanData.category}" غير متوفرة في النظام`,
+        };
       }
 
       // معالجة الموقع (البلد والمدينة)
@@ -94,7 +101,10 @@ export class CompanyImportService {
       }
 
       if (!location) {
-        return { success: false, error: "لا يمكن تحديد الموقع" };
+        return {
+          success: false,
+          error: `لا يمكن تحديد الموقع - فشل في ربط العنوان "${cleanData.address}" أو الدولة/المدينة "${cleanData.country}/${cleanData.city}" مع قاعدة البيانات`,
+        };
       }
 
       // إنشاء الشركة
@@ -397,22 +407,10 @@ export class CompanyImportService {
     };
   }
 
-  private async checkDuplicateCompany(
-    name: string,
-    phone?: string,
-    email?: string
-  ): Promise<boolean> {
+  private async checkDuplicateCompany(name: string): Promise<boolean> {
     const whereConditions: any[] = [
       { name: { equals: name, mode: "insensitive" } },
     ];
-
-    if (phone) {
-      whereConditions.push({ phone });
-    }
-
-    if (email) {
-      whereConditions.push({ email });
-    }
 
     const existingCompany = await prisma.company.findFirst({
       where: {

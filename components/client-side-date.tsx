@@ -6,7 +6,7 @@ interface ClientSideDateProps {
   className?: string;
 }
 
-export function ClientSideDate({ date, locale = 'ar-SA', className }: ClientSideDateProps) {
+export function ClientSideDate({ date, locale  , className }: ClientSideDateProps) {
   return (
     <span className={className} suppressHydrationWarning>
       {new Date(date).toLocaleDateString()}

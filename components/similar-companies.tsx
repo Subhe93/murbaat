@@ -64,7 +64,7 @@ export function SimilarCompanies({ companies, currentCompanySlug }: SimilarCompa
         {similarCompanies.slice(0, 3).map((company) => (
           <Link
             key={company.slug}
-            href={`/country/${company.country.code}/city/${company.city.slug}/company/${company.slug}`}
+            href={`/${company.slug}`}
             className="group block"
           >
             <div className="flex items-center space-x-4 space-x-reverse p-4 rounded-xl border border-gray-200 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-400 hover:shadow-md transition-all duration-300">

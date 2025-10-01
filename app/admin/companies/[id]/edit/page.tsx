@@ -20,7 +20,9 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
-import { toast } from 'sonner'
+// import { toast } from 'sonner'
+import { useToast } from '@/hooks/use-toast'
+
 import { DAYS_OF_WEEK_ARABIC, ALL_DAYS_OF_WEEK } from '@/lib/types/working-hours'
 import { WorkingHoursEditor, WorkingHourData } from '@/components/working-hours-editor'
 
@@ -92,6 +94,7 @@ export default function EditCompanyPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const params = useParams()
+  const { toast } = useToast()
 
   const [formData, setFormData] = useState({
     name: '',
@@ -160,14 +163,16 @@ export default function EditCompanyPage() {
       
       const result = await response.json()
       console.log('نتيجة رفع الصورة:', result)
-      toast.success('تم رفع الصورة بنجاح', {
+      toast({
+        title: 'تم رفع الصورة بنجاح',
         description: `تم رفع ${imageType === 'main' ? 'الصورة الرئيسية' : imageType === 'logo' ? 'اللوغو' : 'الصورة'} بنجاح.`,
         duration: 3000,
       })
       return result.url
     } catch (error) {
       console.error('خطأ في رفع الصورة:', error)
-      toast.error('فشل في رفع الصورة', {
+      toast({
+        title: 'فشل في رفع الصورة',
         description: `تعذر رفع ${imageType === 'main' ? 'الصورة الرئيسية' : imageType === 'logo' ? 'اللوغو' : 'الصورة'}. يرجى التحقق من حجم الصورة والمحاولة مرة أخرى.`,
         duration: 4000,
       })
@@ -182,13 +187,15 @@ export default function EditCompanyPage() {
     console.log(`تحديث ${imageType} بالرابط:`, imageUrl)
     if (imageType === 'main') {
       setFormData(prev => ({ ...prev, mainImage: imageUrl }))
-      toast.success('تم تحديث الصورة الرئيسية', {
+      toast({
+        title: 'تم تحديث الصورة الرئيسية',
         description: 'تم تحديث رابط الصورة الرئيسية في الحقل النصي.',
         duration: 2000,
       })
     } else if (imageType === 'logo') {
       setFormData(prev => ({ ...prev, logoImage: imageUrl }))
-      toast.success('تم تحديث اللوغو', {
+      toast({
+        title: 'تم تحديث اللوغو',
         description: 'تم تحديث رابط اللوغو في الحقل النصي.',
         duration: 2000,
       })
@@ -263,7 +270,9 @@ export default function EditCompanyPage() {
 
       } catch (error) {
         console.error('خطأ في جلب بيانات الشركة:', error)
-        toast.error('خطأ في جلب بيانات الشركة')
+        toast({
+          title: 'خطأ في جلب بيانات الشركة',
+        })
       } finally {
         setIsLoading(false)
       }
@@ -290,7 +299,9 @@ export default function EditCompanyPage() {
           setCountries(countriesData.countries || [])
         } else {
           console.error('فشل في جلب البلدان:', countriesRes.status)
-          toast.error('فشل في جلب البلدان')
+          toast({
+            title: 'فشل في جلب البلدان',
+          })
         }
 
         if (categoriesRes.ok) {
@@ -299,11 +310,15 @@ export default function EditCompanyPage() {
           setCategories(categoriesData.categories || [])
         } else {
           console.error('فشل في جلب الفئات:', categoriesRes.status)
-          toast.error('فشل في جلب الفئات')
+          toast({
+            title: 'فشل في جلب الفئات',
+          })
         }
       } catch (error) {
         console.error('خطأ في جلب البيانات:', error)
-        toast.error('خطأ في جلب البيانات')
+        toast({
+          title: 'خطأ في جلب البيانات',
+        })
       }
     }
 
@@ -325,12 +340,16 @@ export default function EditCompanyPage() {
             setCities(Array.isArray(citiesData) ? citiesData : [])
           } else {
             console.error('فشل في جلب المدن:', response.status)
-            toast.error('فشل في جلب المدن')
+            toast({
+              title: 'فشل في جلب المدن',
+            })
             setCities([])
           }
         } catch (error) {
           console.error('خطأ في جلب المدن:', error)
-          toast.error('خطأ في جلب المدن')
+          toast({
+            title: 'خطأ في جلب المدن',
+          })
           setCities([])
         }
       } else {
@@ -383,7 +402,9 @@ export default function EditCompanyPage() {
     try {
       // التحقق من البيانات المطلوبة
       if (!formData.name || !formData.categoryId || !formData.countryId || !formData.cityId) {
-        toast.error('يرجى ملء جميع الحقول المطلوبة')
+        toast({
+          title: 'يرجى ملء جميع الحقول المطلوبة',
+        })
         return
       }
 
@@ -470,7 +491,9 @@ export default function EditCompanyPage() {
 
       if (!workingHoursResponse.ok) {
         console.warn('تحذير: فشل في تحديث ساعات العمل')
-        toast.warning('تم تحديث الشركة ولكن فشل في تحديث ساعات العمل')
+          toast({
+          title: 'تم تحديث الشركة ولكن فشل في تحديث ساعات العمل',
+        })
       }
 
       // تحديث وسائل التواصل الاجتماعي
@@ -488,10 +511,14 @@ export default function EditCompanyPage() {
 
       if (!socialMediaResponse.ok) {
         console.warn('تحذير: فشل في تحديث وسائل التواصل الاجتماعي')
-        toast.warning('تم تحديث الشركة ولكن فشل في تحديث وسائل التواصل الاجتماعي')
+        toast({
+          title: 'تم تحديث الشركة ولكن فشل في تحديث وسائل التواصل الاجتماعي',
+        })
       }
 
-      toast.success('تم تحديث الشركة بنجاح')
+      toast({
+        title: 'تم تحديث الشركة بنجاح',
+      })
       router.push(`/admin/companies/${params.id}`)
     } catch (error) {
       console.error('خطأ في تحديث الشركة:', error)
@@ -506,7 +533,9 @@ export default function EditCompanyPage() {
       }
       
       // عرض رسالة خطأ مفصلة
-      toast.error(`فشل في تحديث الشركة: ${errorMessage}`, {
+        toast({
+        variant: 'destructive',
+        title: `فشل في تحديث الشركة: ${errorMessage}`,
         description: 'يرجى التحقق من البيانات المدخلة والمحاولة مرة أخرى',
         duration: 5000
       })

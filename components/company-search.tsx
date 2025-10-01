@@ -200,7 +200,7 @@ export function CompanySearch({ currentCity, currentCountry, currentCompanySlug,
               {results.slice(0, 6).map((company) => (
                 <Link
                   key={company.slug}
-                  href={`/country/${company.country}/city/${company.city}/company/${company.slug}`}
+                  href={`/${company.slug}`}
                   className="group block"
                 >
                   <div className="flex items-center space-x-4 space-x-reverse p-4 rounded-xl border border-gray-200 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-500 hover:shadow-md transition-all duration-300">

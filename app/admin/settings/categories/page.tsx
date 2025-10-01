@@ -493,7 +493,7 @@ export default function AdminCategoriesPage() {
                       </TableCell>
                       <TableCell>
                         <div className="text-sm text-gray-600">
-                          {new Date(category.createdAt).toLocaleDateString('ar-SA')}
+                          {new Date(category.createdAt).toLocaleDateString( )}
                         </div>
                       </TableCell>
                       <TableCell>

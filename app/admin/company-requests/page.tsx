@@ -353,7 +353,7 @@ export default function AdminCompanyRequestsPage() {
                       </TableCell>
                       <TableCell>
                         <div className="text-sm text-gray-600">
-                          {new Date(request.createdAt).toLocaleDateString('ar-SA')}
+                          {new Date(request.createdAt).toLocaleDateString( )}
                         </div>
                       </TableCell>
                       <TableCell>

@@ -13,7 +13,7 @@ export default function TermsOfService() {
       <div className="prose prose-lg max-w-none" dir="rtl">
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
           <p className="text-blue-800 font-medium">
-            آخر تحديث: {new Date().toLocaleDateString('ar-SA')}
+            آخر تحديث: {new Date().toLocaleDateString( )}
           </p>
         </div>
 

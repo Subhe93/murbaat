@@ -100,7 +100,7 @@ export default function TestNotificationsPage() {
                 <p className="text-sm text-gray-500 mt-2">
                   النوع: {notification.type} | 
                   الحالة: {notification.isRead ? 'مقروء' : 'غير مقروء'} |
-                  التاريخ: {new Date(notification.createdAt).toLocaleString('ar-SA')}
+                  التاريخ: {new Date(notification.createdAt).toLocaleString()}
                 </p>
               </div>
             ))}

@@ -6,6 +6,11 @@ import { getCategoryBySlug, getCompanies } from '@/lib/database/queries';
 import { CategoryHeader } from '@/components/category-header';
 import { CompaniesGrid } from '@/components/companies-grid';
 import { AdvancedSearchFilters } from '@/components/advanced-search-filters';
+import { 
+  generateItemListSchema,
+  generateOrganizationSchema,
+  generateWebsiteSchema
+} from '@/lib/seo/schema-generator';
 import {
   Breadcrumb,
   BreadcrumbList,
@@ -123,35 +128,85 @@ export default async function CategoryPage({ params, searchParams = {} }: Catego
 
     const companiesResult = await getCompanies(filters);
 
-    // JSON-LD Schema للفئة
-    const jsonLd = {
+    // Debug: Log the companies result
+    console.log('Category Page Debug:', {
+      categoryName: category.name,
+      filters,
+      companiesCount: companiesResult?.data?.length || 0,
+      totalCount: companiesResult?.pagination?.total || 0,
+      companiesResult
+    });
+
+    // Generate schemas for the category page
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://murabaat.com';
+    const itemListSchema = companiesResult.data && companiesResult.data.length > 0 ? generateItemListSchema(
+      companiesResult.data,
+      baseUrl,
+      `شركات ${category.name}`,
+      category.description || `دليل شامل لشركات ${category.name} في المنطقة`
+    ) : null;
+    const organizationSchema = generateOrganizationSchema(baseUrl);
+    const websiteSchema = generateWebsiteSchema(baseUrl);
+    
+    // Generate breadcrumb schema for category page
+    const breadcrumbSchema = {
       "@context": "https://schema.org",
-      "@type": "ItemList",
-      "name": `شركات ${category.name}`,
-      "description": category.description,
-      "numberOfItems": companiesResult.pagination.total,
-      "itemListElement": companiesResult.data.slice(0, 10).map((company, index) => ({
-        "@type": "LocalBusiness",
-        "position": index + 1,
-        "name": company.name,
-        "description": company.shortDescription,
-        "url": `/${company.country.code}/city/${company.city.slug}/company/${company.slug}`,
-        "image": company.mainImage,
-        "aggregateRating": company.reviewsCount > 0 ? {
-          "@type": "AggregateRating",
-          "ratingValue": company.rating,
-          "reviewCount": company.reviewsCount
-        } : undefined
-      }))
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "item": baseUrl,
+          "name": "الرئيسية"
+        },
+        {
+          "@type": "ListItem", 
+          "position": 2,
+          "item": `${baseUrl}/country/${params.country}`,
+          "name": params.country.toUpperCase()
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "item": `${baseUrl}/country/${params.country}/category/${category.slug}`,
+          "name": category.name
+        }
+      ]
     };
 
     return (
       <>
-        {/* JSON-LD Schema */}
+        {/* JSON-LD Schema للقائمة */}
+        {itemListSchema && (
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify(itemListSchema),
+            }}
+          />
+        )}
+
+        {/* JSON-LD Schema للـ BreadcrumbList */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify(jsonLd),
+            __html: JSON.stringify(breadcrumbSchema),
+          }}
+        />
+
+        {/* JSON-LD Schema للمنظمة */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(organizationSchema),
+          }}
+        />
+
+        {/* JSON-LD Schema للموقع */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(websiteSchema),
           }}
         />
 
@@ -196,10 +251,21 @@ export default async function CategoryPage({ params, searchParams = {} }: Catego
               showHoursFilter={true}
             />
             
-            <CompaniesGrid 
-              companies={companiesResult.data} 
-              pagination={companiesResult.pagination}
-            />
+            {companiesResult.data && companiesResult.data.length > 0 ? (
+              <CompaniesGrid 
+                companies={companiesResult.data} 
+                pagination={companiesResult.pagination}
+              />
+            ) : (
+              <div className="text-center py-12">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                  لا توجد شركات في هذه الفئة حالياً
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400">
+                  يرجى المحاولة مرة أخرى لاحقاً أو تصفح فئات أخرى
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </>

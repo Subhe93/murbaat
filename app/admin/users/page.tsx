@@ -862,7 +862,7 @@ export default function AdminUsersPage() {
                       <TableCell>
                         <div className="text-sm text-gray-600">
                           {user.lastLoginAt 
-                            ? new Date(user.lastLoginAt).toLocaleDateString('ar-SA')
+                            ? new Date(user.lastLoginAt).toLocaleDateString( )
                             : 'لم يسجل دخول'
                           }
                         </div>

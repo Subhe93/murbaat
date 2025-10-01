@@ -481,7 +481,7 @@ export default function CompanyDetailsPage() {
                 </Button>
                 
                 <Button variant="outline" className="w-full" asChild>
-                  <Link href={`/${company.country.code}/${company.city.slug}/company/${company.slug}`} target="_blank">
+                  <Link href={`/${company.slug}`} target="_blank">
                     <Eye className="h-4 w-4 ml-2" />
                     عرض في الموقع
                   </Link>

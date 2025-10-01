@@ -594,7 +594,7 @@ export default function AdminAnalyticsPage() {
                   <p className="font-medium text-gray-900 dark:text-white">{activity.title}</p>
                   <p className="text-sm text-gray-600 dark:text-gray-400">{activity.description}</p>
                   <p className="text-xs text-gray-400 mt-1">
-                    {new Date(activity.date).toLocaleString('ar-SA')}
+                    {new Date(activity.date).toLocaleString()}
                   </p>
                 </div>
               </div>

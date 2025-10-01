@@ -84,7 +84,7 @@ export function ReviewDetailsModal({ review, onClose, onApprove, onReject }: Rev
             </div>
             <div className="flex items-center space-x-2 space-x-reverse text-sm text-gray-500">
               <Calendar className="h-4 w-4" />
-              <span>{new Date(review.createdAt).toLocaleDateString('ar-SA')}</span>
+              <span>{new Date(review.createdAt).toLocaleDateString( )}</span>
             </div>
           </div>
 

@@ -46,6 +46,13 @@ interface ImportError {
   data?: any
 }
 
+interface SkippedCompany {
+  row: number
+  companyName: string
+  reason: string
+  data?: any
+}
+
 interface ImportSettings {
   downloadImages: boolean
   createMissingCategories: boolean
@@ -72,6 +79,7 @@ export default function ImportCompaniesPage() {
     failedImages: 0
   })
   const [importErrors, setImportErrors] = useState<ImportError[]>([])
+  const [skippedCompanies, setSkippedCompanies] = useState<SkippedCompany[]>([])
   const [previewData, setPreviewData] = useState<any[]>([])
   const [importId, setImportId] = useState<string | null>(null)
   const [settings, setSettings] = useState<ImportSettings>({
@@ -174,6 +182,7 @@ export default function ImportCompaniesPage() {
         const data = await response.json()
         setImportStats(data.stats)
         setImportErrors(data.errors)
+        setSkippedCompanies(data.skippedCompanies || [])
         
         const progress = data.stats.totalRows > 0 
           ? (data.stats.processedRows / data.stats.totalRows) * 100 
@@ -256,6 +265,24 @@ export default function ImportCompaniesPage() {
     link.download = 'import-errors.csv'
     link.click()
   }, [importErrors])
+
+  // تنزيل تقرير الشركات المتخطاة
+  const downloadSkippedReport = useCallback(() => {
+    if (skippedCompanies.length === 0) return
+
+    const csvContent = [
+      'رقم الصف,اسم الشركة,سبب التخطي',
+      ...skippedCompanies.map(company => 
+        `${company.row},"${company.companyName}","${company.reason}"`
+      )
+    ].join('\n')
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = 'skipped-companies.csv'
+    link.click()
+  }, [skippedCompanies])
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault()
@@ -480,10 +507,11 @@ export default function ImportCompaniesPage() {
       {/* معاينة البيانات والتقدم */}
       {(previewData.length > 0 || isImporting) && (
         <Tabs defaultValue="preview" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="preview">معاينة البيانات</TabsTrigger>
             <TabsTrigger value="progress">تقدم الاستيراد</TabsTrigger>
             <TabsTrigger value="errors">الأخطاء والتحذيرات</TabsTrigger>
+            <TabsTrigger value="skipped">الشركات المتخطاة</TabsTrigger>
           </TabsList>
 
           <TabsContent value="preview" className="space-y-4">
@@ -655,6 +683,60 @@ export default function ImportCompaniesPage() {
                         <AlertCircle className="h-4 w-4" />
                         <AlertDescription>
                           <strong>الصف {error.row}:</strong> {error.companyName} - {error.error}
+                        </AlertDescription>
+                      </Alert>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="skipped" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Info className="h-5 w-5 text-yellow-500" />
+                  الشركات المتخطاة
+                </CardTitle>
+                <CardDescription>
+                  قائمة بالشركات التي تم تخطيها أثناء عملية الاستيراد مع أسباب التخطي
+                </CardDescription>
+                {skippedCompanies.length > 0 && (
+                  <Button
+                    variant="outline"
+                    onClick={downloadSkippedReport}
+                    className="flex items-center gap-2 mt-2"
+                  >
+                    <Download className="h-4 w-4" />
+                    تنزيل تقرير الشركات المتخطاة
+                  </Button>
+                )}
+              </CardHeader>
+              <CardContent>
+                {skippedCompanies.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    لم يتم تخطي أي شركات حتى الآن
+                  </div>
+                ) : (
+                  <div className="space-y-2 max-h-96 overflow-y-auto">
+                    {skippedCompanies.map((company, index) => (
+                      <Alert key={index} className="border-yellow-200 bg-yellow-50">
+                        <Info className="h-4 w-4 text-yellow-600" />
+                        <AlertDescription>
+                          <div className="space-y-1">
+                            <div className="font-medium text-yellow-800">
+                              <strong>الصف {company.row}:</strong> {company.companyName}
+                            </div>
+                            <div className="text-sm text-yellow-700">
+                              <strong>سبب التخطي:</strong> {company.reason}
+                            </div>
+                            {company.data && (
+                              <div className="text-xs text-yellow-600 mt-2">
+                                <strong>البيانات:</strong> الفئة: {company.data.Catégorie}, العنوان: {company.data.Adresse}
+                              </div>
+                            )}
+                          </div>
                         </AlertDescription>
                       </Alert>
                     ))}

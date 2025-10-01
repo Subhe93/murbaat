@@ -435,7 +435,7 @@ export function AdminDashboard() {
                       بواسطة {review.user?.name || 'مستخدم'} • {review.company.name}
                     </p>
                     <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                      {new Date(review.createdAt).toLocaleString('ar-SA')}
+                      {new Date(review.createdAt).toLocaleString()}
                     </p>
                   </div>
                   <Button variant="ghost" size="sm">
@@ -480,7 +480,7 @@ export function AdminDashboard() {
                             <p className="font-medium text-gray-900 dark:text-white">{request.companyName}</p>
                             <p className="text-sm text-gray-500">{request.email}</p>
                       <p className="text-xs text-gray-400 mt-1">
-                        {new Date(request.createdAt).toLocaleString('ar-SA')}
+                        {new Date(request.createdAt).toLocaleString()}
                       </p>
                     </div>
                   </div>

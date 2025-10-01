@@ -204,7 +204,7 @@ export default function PendingReviewsPage() {
                         {renderStars(review.rating)}
                       </div>
                       <span className="text-sm text-gray-500">
-                        {new Date(review.createdAt).toLocaleDateString('ar-SA')}
+                        {new Date(review.createdAt).toLocaleDateString( )}
                       </span>
                     </div>
                   </div>

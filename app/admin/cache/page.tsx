@@ -80,7 +80,7 @@ export default function CacheManagementPage() {
       })
 
       // حفظ وقت التفريغ
-      const currentTime = new Date().toLocaleString('ar-SA')
+      const currentTime = new Date().toLocaleString()
       setLastClearTime(currentTime)
       localStorage.setItem('lastCacheClear', currentTime)
 

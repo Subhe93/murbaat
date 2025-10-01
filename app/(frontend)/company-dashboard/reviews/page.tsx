@@ -359,7 +359,7 @@ export default function AllReviewsPage() {
                           {review.comment}
                         </p>
                         <div className="text-xs text-gray-500 mb-3">
-                          بواسطة {review.user?.name || review.userName || 'زائر'} • {new Date(review.createdAt).toLocaleDateString('ar-SA')}
+                          بواسطة {review.user?.name || review.userName || 'زائر'} • {new Date(review.createdAt).toLocaleDateString()}
                         </div>
 
                         {/* عرض الردود الموجودة */}
@@ -381,7 +381,7 @@ export default function AllReviewsPage() {
                                         <Badge variant="secondary" className="text-xs">الشركة</Badge>
                                       )}
                                       <span className="text-xs text-gray-500">
-                                        {new Date(reply.createdAt).toLocaleDateString('ar-SA')}
+                                        {new Date(reply.createdAt).toLocaleDateString( )}
                                       </span>
                                     </div>
                                     <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
