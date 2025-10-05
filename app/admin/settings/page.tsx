@@ -296,6 +296,19 @@ export default function AdminSettingsPage() {
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
+            
+            <Button variant="outline" className="h-20 flex items-center justify-between p-4" asChild>
+              <Link href="/admin/settings/sub-areas">
+                <div className="flex items-center space-x-3 space-x-reverse">
+                  <MapPin className="h-6 w-6 text-purple-600" />
+                  <div className="text-right">
+                    <p className="font-medium">إدارة المناطق الفرعية</p>
+                    <p className="text-sm text-gray-500">إضافة وتعديل المناطق الفرعية</p>
+                  </div>
+                </div>
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </Button>
           </div>
         </CardContent>
       </Card>

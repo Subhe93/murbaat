@@ -26,6 +26,7 @@ model Country {
   // العلاقات
   cities          City[]
   companies       Company[]
+  subAreas        SubArea[]
 
   @@map("countries")
 }
@@ -47,10 +48,38 @@ model City {
   // العلاقات
   country         Country   @relation(fields: [countryId], references: [id], onDelete: Cascade)
   companies       Company[]
+  subAreas        SubArea[]
 
   @@index([countryCode])
   @@index([slug])
   @@map("cities")
+}
+
+// جدول المناطق الفرعية
+model SubArea {
+  id              String    @id @default(cuid())
+  slug            String    @unique // معرف فريد للمنطقة الفرعية
+  name            String    // اسم المنطقة الفرعية باللغة العربية
+  cityId          String    // معرف المدينة
+  cityCode        String    // للاستعلامات السريعة
+  countryId       String    // معرف البلد
+  countryCode     String    // للاستعلامات السريعة
+  image           String?   // رابط صورة المنطقة الفرعية
+  description     String?   // وصف المنطقة الفرعية
+  companiesCount  Int       @default(0) // عدد الشركات
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // العلاقات
+  city            City      @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  country         Country   @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  companies       Company[]
+
+  @@index([cityCode])
+  @@index([countryCode])
+  @@index([slug])
+  @@map("sub_areas")
 }
 
 // جدول الفئات
@@ -67,9 +96,34 @@ model Category {
 
   // العلاقات
   companies       Company[]
+  subCategories   SubCategory[]
 
   @@index([slug])
   @@map("categories")
+}
+
+// جدول التصنيفات الفرعية
+model SubCategory {
+  id              String    @id @default(cuid())
+  slug            String    @unique
+  name            String
+  description     String?
+  icon            String?
+  companiesCount  Int       @default(0)
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relation to parent category
+  categoryId      String
+  category        Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  // Relation to companies
+  companies       Company[]
+
+  @@index([slug])
+  @@index([categoryId])
+  @@map("sub_categories")
 }
 
 // جدول الشركات
@@ -81,7 +135,9 @@ model Company {
   shortDescription  String?   // وصف مختصر
   longDescription   String?   // وصف مفصل
   categoryId        String    // معرف الفئة
+  subCategoryId     String?   // معرف التصنيف الفرعي
   cityId            String    // معرف المدينة
+  subAreaId         String?   // معرف المنطقة الفرعية
   countryId         String    // معرف البلد
   
   // معلومات الاتصال
@@ -118,7 +174,9 @@ model Company {
   // العلاقات
   country           Country       @relation(fields: [countryId], references: [id])
   city              City          @relation(fields: [cityId], references: [id])
+  subArea           SubArea?      @relation(fields: [subAreaId], references: [id], onDelete: SetNull)
   category          Category      @relation(fields: [categoryId], references: [id])
+  subCategory       SubCategory?  @relation(fields: [subCategoryId], references: [id], onDelete: SetNull)
   images            CompanyImage[]
   tags              CompanyTag[]
   workingHours      WorkingHours[]
@@ -130,7 +188,9 @@ model Company {
 
   @@index([countryId])
   @@index([cityId])
+  @@index([subAreaId])
   @@index([categoryId])
+  @@index([subCategoryId])
   @@index([rating])
   @@index([slug])
   @@index([isVerified])

@@ -5,7 +5,9 @@ export type CompanyWithRelations = Prisma.CompanyGetPayload<{
   include: {
     country: true
     city: true
+    subArea: true
     category: true
+    subCategory: true
     images: true
     tags: true
     workingHours: true
@@ -120,7 +122,9 @@ export interface SearchFilters {
   query?: string
   country?: string
   city?: string
+  subArea?: string
   category?: string
+  subcategory?: string
   rating?: number
   verified?: boolean
   featured?: boolean

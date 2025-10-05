@@ -19,8 +19,15 @@ export async function GET() {
         company: {
           include: {
             category: true,
+            subCategory: true, // Include subcategory
             city: {
               include: {
+                country: true
+              }
+            },
+            subArea: {
+              include: {
+                city: true,
                 country: true
               }
             },
@@ -82,7 +89,9 @@ export async function PUT(request: NextRequest) {
       shortDescription,
       longDescription,
       categoryId,
+      subCategoryId, // Destructure subCategoryId
       cityId,
+      subAreaId,
       phone,
       email,
       website,
@@ -114,7 +123,9 @@ export async function PUT(request: NextRequest) {
         shortDescription,
         longDescription,
         categoryId,
+        subCategoryId: subCategoryId || null, // Add to update data
         cityId,
+        subAreaId: subAreaId || null,
         phone,
         email,
         website,
@@ -129,8 +140,15 @@ export async function PUT(request: NextRequest) {
       },
       include: {
         category: true,
+        subCategory: true,
         city: {
           include: {
+            country: true
+          }
+        },
+        subArea: {
+          include: {
+            city: true,
             country: true
           }
         }

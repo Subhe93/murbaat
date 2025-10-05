@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { CityHeader } from '@/components/city-header';
 import { CompaniesGrid } from '@/components/companies-grid';
 import { AdvancedSearchFilters } from '@/components/advanced-search-filters';
-import { getCityBySlug, getCompanies } from '@/lib/database/queries';
+import { SubAreasGrid } from '@/components/sub-area/sub-areas-grid';
+import { getCityBySlug, getCompanies, getSubAreas } from '@/lib/database/queries';
 import { 
   generateItemListSchema,
   generateOrganizationSchema,
@@ -106,7 +107,10 @@ export default async function CityPage({ params, searchParams }: CityPageProps) 
       limit: 20
     };
 
-    const companiesResult = await getCompanies(filters);
+    const [companiesResult, subAreas] = await Promise.all([
+      getCompanies(filters),
+      getSubAreas(cityData.id, cityData.countryCode)
+    ]);
 
     // Generate schemas for the city page
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://murabaat.com';
@@ -201,6 +205,16 @@ export default async function CityPage({ params, searchParams }: CityPageProps) 
         </Breadcrumb>
 
         <CityHeader city={cityData} />
+        
+        {/* Sub Areas Section */}
+        <div className="mt-12">
+          <SubAreasGrid 
+            subAreas={subAreas}
+            cityName={cityData.name}
+            countryCode={cityData.country.code}
+            citySlug={cityData.slug}
+          />
+        </div>
         
         <div className="mt-12">
           <div className="flex justify-between items-center mb-6">

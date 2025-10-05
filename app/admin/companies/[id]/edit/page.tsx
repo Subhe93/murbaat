@@ -37,6 +37,15 @@ interface City {
   id: string
   name: string
   slug: string
+  countryId: string
+}
+
+interface SubArea {
+  id: string
+  name: string
+  slug: string
+  cityId: string
+  countryId: string
 }
 
 interface Category {
@@ -44,6 +53,11 @@ interface Category {
   name: string
   slug: string
   icon?: string
+}
+
+interface SubCategory {
+  id: string;
+  name: string;
 }
 
 interface CompanyDetails {
@@ -71,7 +85,9 @@ interface CompanyDetails {
   updatedAt: string
   country: { id: string; name: string; code: string; flag?: string }
   city: { id: string; name: string; slug: string }
+  subArea?: { id: string; name: string; slug: string }
   category: { id: string; name: string; slug: string; icon?: string }
+  subCategoryId?: string;
   workingHours: Array<{
     dayOfWeek: string
     openTime?: string
@@ -90,7 +106,9 @@ export default function EditCompanyPage() {
   const [company, setCompany] = useState<CompanyDetails | null>(null)
   const [countries, setCountries] = useState<Country[]>([])
   const [cities, setCities] = useState<City[]>([])
+  const [subAreas, setSubAreas] = useState<SubArea[]>([])
   const [categories, setCategories] = useState<Category[]>([])
+  const [subCategories, setSubCategories] = useState<SubCategory[]>([])
   const { data: session, status } = useSession()
   const router = useRouter()
   const params = useParams()
@@ -103,8 +121,10 @@ export default function EditCompanyPage() {
     shortDescription: '',
     longDescription: '',
     categoryId: '',
+    subCategoryId: '',
     countryId: '',
     cityId: '',
+    subAreaId: '',
     address: '',
     phone: '',
     email: '',
@@ -143,6 +163,27 @@ export default function EditCompanyPage() {
   const [newSpecialty, setNewSpecialty] = useState('')
   const [additionalImages, setAdditionalImages] = useState<string[]>([])
   const [uploadingImage, setUploadingImage] = useState<string | null>(null)
+
+  // دالة جلب المناطق الفرعية لمدينة محددة
+  const fetchSubAreasForCity = async (cityId: string) => {
+    try {
+      console.log('جلب المناطق الفرعية للمدينة:', cityId)
+      const response = await fetch(`/api/admin/sub-areas/by-city/${cityId}`, {
+        credentials: 'include'
+      })
+      if (response.ok) {
+        const data = await response.json()
+        console.log('المناطق الفرعية المحملة:', data?.length || 0)
+        setSubAreas(Array.isArray(data) ? data : [])
+      } else {
+        console.error('فشل في جلب المناطق الفرعية:', response.status)
+        setSubAreas([])
+      }
+    } catch (error) {
+      console.error('خطأ في جلب المناطق الفرعية:', error)
+      setSubAreas([])
+    }
+  }
 
   // دالة رفع الصور
   const uploadImage = async (file: File, imageType: string): Promise<string> => {
@@ -226,8 +267,10 @@ export default function EditCompanyPage() {
           shortDescription: companyData.shortDescription || '',
           longDescription: companyData.longDescription || '',
           categoryId: companyData.category?.id || '',
+          subCategoryId: companyData.subCategoryId || '',
           countryId: companyData.country?.id || '',
           cityId: companyData.city?.id || '',
+          subAreaId: companyData.subArea?.id || '',
           address: companyData.address || '',
           phone: companyData.phone || '',
           email: companyData.email || '',
@@ -266,6 +309,11 @@ export default function EditCompanyPage() {
         if (companyData.images && Array.isArray(companyData.images)) {
           const imageUrls = companyData.images.map((img: any) => img.imageUrl)
           setAdditionalImages(imageUrls)
+        }
+
+        // جلب المناطق الفرعية للمدينة المحددة
+        if (companyData.city?.id) {
+          fetchSubAreasForCity(companyData.city.id)
         }
 
       } catch (error) {
@@ -359,6 +407,65 @@ export default function EditCompanyPage() {
 
     fetchCities()
   }, [formData.countryId])
+
+  // جلب المناطق الفرعية عند تغيير المدينة
+  useEffect(() => {
+    const fetchSubAreas = async () => {
+      if (formData.cityId) {
+        try {
+          console.log('جلب المناطق الفرعية للمدينة:', formData.cityId)
+          const response = await fetch(`/api/admin/sub-areas/by-city/${formData.cityId}`, {
+            credentials: 'include'
+          })
+          if (response.ok) {
+            const data = await response.json()
+            console.log('المناطق الفرعية المحملة:', data?.length || 0)
+            setSubAreas(Array.isArray(data) ? data : [])
+          } else {
+            console.error('فشل في جلب المناطق الفرعية:', response.status)
+            toast({
+              title: 'فشل في جلب المناطق الفرعية',
+            })
+            setSubAreas([])
+          }
+        } catch (error) {
+          console.error('خطأ في جلب المناطق الفرعية:', error)
+          toast({
+            title: 'خطأ في جلب المناطق الفرعية',
+          })
+          setSubAreas([])
+        }
+      } else {
+        setSubAreas([])
+        setFormData(prev => ({ ...prev, subAreaId: '' }))
+      }
+    }
+
+    fetchSubAreas()
+  }, [formData.cityId])
+
+  // Fetch sub-categories when category changes
+  useEffect(() => {
+    const fetchSubCategories = async () => {
+      if (formData.categoryId) {
+        try {
+          const response = await fetch(`/api/subcategories?categoryId=${formData.categoryId}`)
+          if (response.ok) {
+            const data = await response.json()
+            setSubCategories(data.subCategories || [])
+          } else {
+            setSubCategories([])
+          }
+        } catch (error) {
+          console.error('Failed to fetch sub-categories:', error)
+          setSubCategories([])
+        }
+      } else {
+        setSubCategories([])
+      }
+    }
+    fetchSubCategories()
+  }, [formData.categoryId])
 
   // دوال المساعدة
   const addService = () => {
@@ -716,7 +823,7 @@ export default function EditCompanyPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="category">الفئة *</Label>
-                    <Select value={formData.categoryId} onValueChange={(value) => setFormData(prev => ({ ...prev, categoryId: value }))}>
+                    <Select value={formData.categoryId} onValueChange={(value) => setFormData(prev => ({ ...prev, categoryId: value, subCategoryId: '' }))}>
                       <SelectTrigger>
                         <SelectValue placeholder="اختر الفئة" />
                       </SelectTrigger>
@@ -732,6 +839,22 @@ export default function EditCompanyPage() {
                             جاري تحميل الفئات...
                           </div>
                         )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="subCategory">التصنيف الفرعي</Label>
+                    <Select value={formData.subCategoryId} onValueChange={(value) => setFormData(prev => ({ ...prev, subCategoryId: value }))} disabled={!formData.categoryId || subCategories.length === 0}>
+                      <SelectTrigger>
+                        <SelectValue placeholder={!formData.categoryId ? "اختر الفئة أولاً" : subCategories.length > 0 ? "اختر التصنيف الفرعي" : "لا توجد تصنيفات فرعية"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {subCategories.map((subCategory) => (
+                          <SelectItem key={subCategory.id} value={subCategory.id}>
+                            {subCategory.name}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -763,7 +886,7 @@ export default function EditCompanyPage() {
                   <Label htmlFor="city">المدينة *</Label>
                   <Select 
                     value={formData.cityId} 
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, cityId: value }))}
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, cityId: value, subAreaId: '' }))}
                     disabled={!formData.countryId}
                   >
                     <SelectTrigger>
@@ -789,6 +912,42 @@ export default function EditCompanyPage() {
                       )}
                     </SelectContent>
                   </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="subArea">المنطقة الفرعية</Label>
+                  <Select 
+                    value={formData.subAreaId || "none"} 
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, subAreaId: value === "none" ? "" : value }))}
+                    disabled={!formData.cityId}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={
+                        !formData.cityId 
+                          ? "اختر المدينة أولاً" 
+                          : subAreas.length > 0 
+                            ? "اختر المنطقة الفرعية (اختياري)" 
+                            : "جاري تحميل المناطق الفرعية..."
+                      } />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">لا يوجد</SelectItem>
+                      {subAreas.length > 0 ? (
+                        subAreas.map((subArea) => (
+                          <SelectItem key={subArea.id} value={subArea.id}>
+                            {subArea.name}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <div className="px-2 py-1.5 text-sm text-gray-500">
+                          {!formData.cityId ? "اختر المدينة أولاً" : "جاري تحميل المناطق الفرعية..."}
+                        </div>
+                      )}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-gray-500">
+                    اختياري - يمكن تحديد منطقة فرعية أكثر تحديداً داخل المدينة
+                  </p>
                 </div>
               </CardContent>
             </Card>

@@ -2,12 +2,10 @@ export const dynamic = "force-dynamic";
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { getCategoryBySlug, getCompanies, getSubcategories, getCountryByCode, getSubAreas } from '@/lib/database/queries';
+import { getSubcategoryBySlug, getCompanies, getCategoryBySlug, getCountryByCode } from '@/lib/database/queries';
 import { CategoryHeader } from '@/components/category-header';
 import { CompaniesGrid } from '@/components/companies-grid';
 import { AdvancedSearchFilters } from '@/components/advanced-search-filters';
-import { SubcategoriesEnhanced } from '@/components/subcategories-enhanced';
-import { SubAreasGrid } from '@/components/sub-area/sub-areas-grid';
 import { 
   generateItemListSchema,
   generateOrganizationSchema,
@@ -22,85 +20,59 @@ import {
   BreadcrumbPage,
 } from '@/components/ui/breadcrumb';
 
-export async function generateStaticParams() {
-  try {
-    const { getCategories, getCountries } = await import('@/lib/database/queries');
-    const [categories, countries] = await Promise.all([
-      getCategories(),
-      getCountries()
-    ]);
-    
-    const params = [];
-    for (const country of countries) {
-      for (const category of categories) {
-        params.push({
-          country: country.code,
-          category: category.slug,
-        });
-      }
-    }
-    
-    return params;
-  } catch (error) {
-    console.error('خطأ في generateStaticParams للفئات:', error);
-    return [];
-  }
-}
-
 export async function generateMetadata({ 
   params 
 }: { 
-  params: { country: string; category: string } 
+  params: { country: string; category: string; subcategory: string } 
 }): Promise<Metadata> {
   try {
-    const [category, country] = await Promise.all([
-      getCategoryBySlug(params.category, params.country),
+    const [subcategory, country] = await Promise.all([
+      getSubcategoryBySlug(params.subcategory),
       getCountryByCode(params.country)
     ]);
     
-    if (!category) {
+    if (!subcategory) {
       return {
-        title: 'الفئة غير موجودة',
-        description: 'هذه الفئة غير متوفرة في دليل الشركات',
+        title: 'الفئة الفرعية غير موجودة',
+        description: 'هذه الفئة الفرعية غير متوفرة في دليل الشركات',
       };
     }
 
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://murabaat.com';
-    const categoryUrl = `${baseUrl}/${params.country}/category/${params.category}`;
+    const subcategoryUrl = `${baseUrl}/${params.country}/category/${params.category}/${params.subcategory}`;
     const countryName = country?.name || params.country.toUpperCase();
 
     return {
-      title: `${category.name} في ${countryName} | دليل الشركات`,
-      description: `اكتشف أفضل  ${category.name} في ${countryName}.  متخصصة مع تقييمات العملاء.`,
+      title: `${subcategory.name} في ${countryName} | ${subcategory.category.name}`,
+      description: `اكتشف أفضل شركات ${subcategory.name} في ${countryName}.`,
       keywords: [
-        category.name,
-        ` ${category.name}`,
-        `${category.name} ${countryName}`,
+        subcategory.name,
+        subcategory.category.name,
+        `شركات ${subcategory.name}`,
+        `${subcategory.name} ${countryName}`,
         'دليل الشركات',
-        'خدمات متخصصة'
       ].join(', '),
       
       openGraph: {
-        title: `${category.name} - دليل الشركات`,
-        description: ` متخصصة في ${category.name}`,
-        url: categoryUrl,
-        // images: category.image ? [category.image] : [], 
+        title: `${subcategory.name} - دليل الشركات`,
+        description: `شركات متخصصة في ${subcategory.name}`,
+        url: subcategoryUrl,
       },
 
       alternates: {
-        canonical: categoryUrl,
+        canonical: subcategoryUrl,
       }
     };
   } catch (error) {
-    console.error('خطأ في generateMetadata للفئة:', error);
+    console.error('خطأ في generateMetadata للفئة الفرعية:', error);
     return {
-      title: 'خطأ في تحميل الفئة',
+      title: 'خطأ في تحميل الفئة الفرعية',
     };
   }
 }
 
-interface CategoryPageProps {
-  params: { country: string; category: string }
+interface SubcategoryPageProps {
+  params: { country: string; category: string; subcategory: string }
   searchParams?: { 
     city?: string
     rating?: string
@@ -111,23 +83,26 @@ interface CategoryPageProps {
   }
 }
 
-export default async function CategoryPage({ params, searchParams = {} }: CategoryPageProps) {
+export default async function SubcategoryPage({ params, searchParams = {} }: SubcategoryPageProps) {
   try {
-    const [category, country] = await Promise.all([
-      getCategoryBySlug(params.category , params.country),
+    const [subcategory, category, country] = await Promise.all([
+      getSubcategoryBySlug(params.subcategory),
+      getCategoryBySlug(params.category, params.country),
       getCountryByCode(params.country)
     ]);
 
+    if (!subcategory) {
+      notFound();
+    }
+    
     if (!category) {
       notFound();
     }
 
-    const subcategories = await getSubcategories(params.category);
-
-    // إعداد الفلاتر من searchParams
     const filters = {
       country: params.country,
       category: params.category,
+      subcategory: params.subcategory,
       city: searchParams?.city,
       rating: searchParams?.rating ? parseFloat(searchParams.rating) : undefined,
       verified: searchParams?.verified === 'true' ? true : searchParams?.verified === 'false' ? false : undefined,
@@ -137,32 +112,18 @@ export default async function CategoryPage({ params, searchParams = {} }: Catego
       limit: 20
     };
 
-    const [companiesResult, subAreas] = await Promise.all([
-      getCompanies(filters),
-      getSubAreas(undefined, params.country)
-    ]);
+    const companiesResult = await getCompanies(filters);
 
-    // Debug: Log the companies result
-    console.log('Category Page Debug:', {
-      categoryName: category.name,
-      filters,
-      companiesCount: companiesResult?.data?.length || 0,
-      totalCount: companiesResult?.pagination?.total || 0,
-      companiesResult
-    });
-
-    // Generate schemas for the category page
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://murabaat.com';
     const itemListSchema = companiesResult.data && companiesResult.data.length > 0 ? generateItemListSchema(
       companiesResult.data,
       baseUrl,
-      `شركات ${category.name}`,
-      category.description || `دليل شامل لشركات ${category.name} في المنطقة`
+      ` ${subcategory.name}`,
+      subcategory.description || `دليل شامل لشركات ${subcategory.name} في المنطقة`
     ) : null;
     const organizationSchema = generateOrganizationSchema(baseUrl);
     const websiteSchema = generateWebsiteSchema(baseUrl);
     
-    // Generate breadcrumb schema for category page
     const countryName = country?.name || params.country.toUpperCase();
     const breadcrumbSchema = {
       "@context": "https://schema.org",
@@ -185,13 +146,18 @@ export default async function CategoryPage({ params, searchParams = {} }: Catego
           "position": 3,
           "item": `${baseUrl}/country/${params.country}/category/${category.slug}`,
           "name": category.name
+        },
+        {
+          "@type": "ListItem",
+          "position": 4,
+          "item": `${baseUrl}/country/${params.country}/category/${category.slug}/${subcategory.slug}`,
+          "name": subcategory.name
         }
       ]
     };
 
     return (
       <>
-        {/* JSON-LD Schema للقائمة */}
         {itemListSchema && (
           <script
             type="application/ld+json"
@@ -201,7 +167,6 @@ export default async function CategoryPage({ params, searchParams = {} }: Catego
           />
         )}
 
-        {/* JSON-LD Schema للـ BreadcrumbList */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -209,7 +174,6 @@ export default async function CategoryPage({ params, searchParams = {} }: Catego
           }}
         />
 
-        {/* JSON-LD Schema للمنظمة */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -217,7 +181,6 @@ export default async function CategoryPage({ params, searchParams = {} }: Catego
           }}
         />
 
-        {/* JSON-LD Schema للموقع */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -241,37 +204,29 @@ export default async function CategoryPage({ params, searchParams = {} }: Catego
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                <BreadcrumbPage>{category.name}</BreadcrumbPage>
+                <BreadcrumbLink asChild>
+                  <Link href={`/country/${params.country}/category/${category.slug}`}>{category.name}</Link>
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage>{subcategory.name}</BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
 
-          <CategoryHeader category={category} /> {/* @ts-ignore */}
+          <CategoryHeader category={subcategory} />
 
-          <SubcategoriesEnhanced subcategories={subcategories} country={params.country} category={params.category} />
-          
-          {/* Sub Areas Section */}
-          {subAreas.length > 0 && (
-            <div className="mt-12">
-              <SubAreasGrid 
-                subAreas={subAreas}
-                cityName="جميع المدن"
-                countryCode={params.country}
-                citySlug="all"
-              />
-            </div>
-          )}
-          
           <div className="mt-12">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                 {category.name}
+                 {subcategory.name}
               </h2>
               <span className="text-gray-600 dark:text-gray-400">
                 {companiesResult.pagination.total} مرتبط
               </span>
             </div>
-         
+            
             <AdvancedSearchFilters 
               showLocationFilter={true}
               showCategoryFilter={false}
@@ -288,7 +243,7 @@ export default async function CategoryPage({ params, searchParams = {} }: Catego
             ) : (
               <div className="text-center py-12">
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                  لا توجد شركات في هذه الفئة حالياً
+                  لا توجد  في هذه الفئة الفرعية حالياً
                 </h3>
                 <p className="text-gray-600 dark:text-gray-400">
                   يرجى المحاولة مرة أخرى لاحقاً أو تصفح فئات أخرى
@@ -301,12 +256,12 @@ export default async function CategoryPage({ params, searchParams = {} }: Catego
     );
 
   } catch (error) {
-    console.error('خطأ في تحميل صفحة الفئة:', error);
+    console.error('خطأ في تحميل صفحة الفئة الفرعية:', error);
     
     return (
       <div className="container mx-auto px-4 py-16 text-center">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-          عذراً، حدث خطأ في تحميل الفئة
+          عذراً، حدث خطأ في تحميل الفئة الفرعية
         </h1>
         <p className="text-gray-600 dark:text-gray-400 mb-8">
           يرجى المحاولة مرة أخرى أو العودة للصفحة الرئيسية

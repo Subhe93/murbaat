@@ -27,6 +27,11 @@ import { Switch } from '@/components/ui/switch'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { toast } from 'sonner'
 
+interface SubCategory {
+  id: string;
+  name: string;
+}
+
 export default function CompanyBasicInfoPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
@@ -35,8 +40,10 @@ export default function CompanyBasicInfoPage() {
   const [companyData, setCompanyData] = useState<any>(null)
 
   const [categories, setCategories] = useState<any[]>([])
+  const [subCategories, setSubCategories] = useState<SubCategory[]>([])
   const [countries, setCountries] = useState<any[]>([])
   const [cities, setCities] = useState<any[]>([])
+  const [subAreas, setSubAreas] = useState<any[]>([])
   const [isDataLoading, setIsDataLoading] = useState(true)
   const [isUploadingLogo, setIsUploadingLogo] = useState(false)
   const logoInputRef = useRef<HTMLInputElement>(null)
@@ -72,6 +79,14 @@ export default function CompanyBasicInfoPage() {
         if (data.company?.countryId) {
           fetchCities(data.company.countryId)
         }
+        // جلب المناطق الفرعية للمدينة المحددة
+        if (data.company?.cityId) {
+          fetchSubAreas(data.company.cityId)
+        }
+        // Fetch sub-categories for the initial category
+        if (data.company?.categoryId) {
+          fetchSubCategories(data.company.categoryId);
+        }
       } else {
         toast.error('فشل في جلب بيانات الشركة')
       }
@@ -94,6 +109,22 @@ export default function CompanyBasicInfoPage() {
     }
   }
 
+  const fetchSubCategories = async (categoryId: string) => {
+    if (!categoryId) {
+      setSubCategories([]);
+      return;
+    }
+    try {
+      const response = await fetch(`/api/subcategories?categoryId=${categoryId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setSubCategories(data.subCategories || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch sub-categories:', error);
+    }
+  };
+
   const fetchCountries = async () => {
     try {
       const response = await fetch('/api/countries?activeOnly=true')
@@ -109,6 +140,7 @@ export default function CompanyBasicInfoPage() {
   const fetchCities = async (countryId: string) => {
     if (!countryId) {
       setCities([])
+      setSubAreas([])
       return
     }
     
@@ -120,6 +152,23 @@ export default function CompanyBasicInfoPage() {
       }
     } catch (error) {
       console.error('خطأ في جلب المدن:', error)
+    }
+  }
+
+  const fetchSubAreas = async (cityId: string) => {
+    if (!cityId) {
+      setSubAreas([])
+      return
+    }
+    
+    try {
+      const response = await fetch(`/api/sub-areas?cityId=${cityId}`)
+      if (response.ok) {
+        const data = await response.json()
+        setSubAreas(data || [])
+      }
+    } catch (error) {
+      console.error('خطأ في جلب المناطق الفرعية:', error)
     }
   }
 
@@ -231,10 +280,29 @@ export default function CompanyBasicInfoPage() {
     setCompanyData((prev: any) => ({
       ...prev,
       countryId,
-      cityId: '' // إعادة تعيين المدينة عند تغيير البلد
+      cityId: '', // إعادة تعيين المدينة عند تغيير البلد
+      subAreaId: '' // إعادة تعيين المنطقة الفرعية عند تغيير البلد
     }))
     fetchCities(countryId)
   }
+
+  const handleCityChange = (cityId: string) => {
+    setCompanyData((prev: any) => ({
+      ...prev,
+      cityId,
+      subAreaId: '' // إعادة تعيين المنطقة الفرعية عند تغيير المدينة
+    }))
+    fetchSubAreas(cityId)
+  }
+
+  const handleCategoryChange = (categoryId: string) => {
+    setCompanyData((prev: any) => ({
+      ...prev,
+      categoryId,
+      subCategoryId: '' // Reset sub-category when main category changes
+    }));
+    fetchSubCategories(categoryId);
+  };
 
   if (status === 'loading' || isDataLoading) {
     return (
@@ -462,7 +530,7 @@ export default function CompanyBasicInfoPage() {
               <Label htmlFor="category">الفئة *</Label>
               <Select 
                 value={companyData.categoryId} 
-                onValueChange={(value) => setCompanyData((prev: any) => ({ ...prev, categoryId: value }))}
+                onValueChange={handleCategoryChange}
                 disabled={!isEditing}
               >
                 <SelectTrigger>
@@ -472,6 +540,26 @@ export default function CompanyBasicInfoPage() {
                   {categories.map(category => (
                     <SelectItem key={category.id} value={category.id}>
                       {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="subCategory">التصنيف الفرعي</Label>
+              <Select 
+                value={companyData.subCategoryId || ''} 
+                onValueChange={(value) => setCompanyData((prev: any) => ({ ...prev, subCategoryId: value }))}
+                disabled={!isEditing || !companyData.categoryId || subCategories.length === 0}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={!companyData.categoryId ? "اختر الفئة أولاً" : subCategories.length > 0 ? "اختر التصنيف الفرعي" : "لا توجد تصنيفات فرعية"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {subCategories.map(subCategory => (
+                    <SelectItem key={subCategory.id} value={subCategory.id}>
+                      {subCategory.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -536,7 +624,7 @@ export default function CompanyBasicInfoPage() {
               <Label htmlFor="city">المدينة *</Label>
               <Select 
                 value={companyData.cityId} 
-                onValueChange={(value) => setCompanyData((prev: any) => ({ ...prev, cityId: value }))}
+                onValueChange={handleCityChange}
                 disabled={!isEditing || !companyData.countryId}
               >
                 <SelectTrigger>
@@ -546,6 +634,27 @@ export default function CompanyBasicInfoPage() {
                   {cities.map(city => (
                     <SelectItem key={city.id} value={city.id}>
                       {city.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="subArea">المنطقة الفرعية</Label>
+              <Select 
+                value={companyData.subAreaId || 'none'} 
+                onValueChange={(value) => setCompanyData((prev: any) => ({ ...prev, subAreaId: value === "none" ? "" : value }))}
+                disabled={!isEditing || !companyData.cityId}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={companyData.cityId ? "اختر المنطقة الفرعية (اختياري)" : "اختر المدينة أولاً"} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">لا يوجد</SelectItem>
+                  {subAreas.map(subArea => (
+                    <SelectItem key={subArea.id} value={subArea.id}>
+                      {subArea.name}
                     </SelectItem>
                   ))}
                 </SelectContent>

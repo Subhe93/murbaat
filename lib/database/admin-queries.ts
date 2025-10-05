@@ -593,7 +593,9 @@ export async function createCompany(data: {
   shortDescription?: string
   longDescription?: string
   categoryId: string
+  subCategoryId?: string
   cityId: string
+  subAreaId?: string
   countryId: string
   phone?: string
   email?: string
@@ -625,10 +627,14 @@ export async function createCompany(data: {
     slug = await createUniqueEnglishSlug('company', data.name)
   }
 
+  const { subCategoryId, subAreaId, ...restOfData } = data;
+
   return await prisma.company.create({
     data: {
-      ...data,
+      ...restOfData,
       slug,
+      subCategoryId: subCategoryId || null,
+      subAreaId: subAreaId || null,
       services: data.services || [],
       specialties: data.specialties || [],
     },
@@ -655,7 +661,9 @@ export async function updateCompany(companyId: string, data: Partial<{
   shortDescription: string
   longDescription: string
   categoryId: string
+  subCategoryId?: string
   cityId: string
+  subAreaId?: string
   countryId: string
   phone: string
   email: string
@@ -672,8 +680,16 @@ export async function updateCompany(companyId: string, data: Partial<{
   isActive: boolean
   additionalImages: string[]
 }>) {
-  const { additionalImages, ...companyData } = data
+  const { additionalImages, subCategoryId, subAreaId, ...companyData } = data
   const updateData: any = { ...companyData }
+
+  if (subCategoryId !== undefined) {
+    updateData.subCategoryId = subCategoryId === '' ? null : subCategoryId;
+  }
+  
+  if (subAreaId !== undefined) {
+    updateData.subAreaId = subAreaId === '' ? null : subAreaId;
+  }
   
   // إذا تم تمرير slug مخصص، استخدمه، وإلا أنشئ واحد من الاسم
   if (data.slug) {
@@ -746,6 +762,7 @@ export async function getCompanyForAdmin(companyId: string) {
     include: {
       country: true,
       city: true,
+      subArea: true,
       category: true,
       images: {
         where: { isActive: true },
@@ -869,14 +886,14 @@ export async function exportCompaniesData(format: 'csv' | 'json' = 'csv') {
   ].join(',')
 
   const csvRows = companies.map(company => [
-    `"${company.name}"`,
-    `"${company.description || ''}"`,
-    `"${company.category.name}"`,
-    `"${company.country.name}"`,
-    `"${company.city.name}"`,
-    `"${company.phone || ''}"`,
-    `"${company.email || ''}"`,
-    `"${company.website || ''}"`,
+    `"${company.name}"`, 
+    `"${company.description || ''}"`, 
+    `"${company.category.name}"`, 
+    `"${company.country.name}"`, 
+    `"${company.city.name}"`, 
+    `"${company.phone || ''}"`, 
+    `"${company.email || ''}"`, 
+    `"${company.website || ''}"`, 
     company.rating,
     company.reviewsCount,
     company.isVerified ? 'نعم' : 'لا',

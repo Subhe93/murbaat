@@ -24,6 +24,7 @@ import {
   BreadcrumbSeparator,
   BreadcrumbPage,
 } from '@/components/ui/breadcrumb';
+import { CompanyCategoriesBadges } from '@/components/company-categories-badges';
 
 // Transform database company to component-expected format
 function transformCompanyForComponents(company: CompanyWithRelations): Company {
@@ -342,6 +343,17 @@ export default async function CompanyPage({
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
+
+          {/* Category, Subcategory, and SubArea Section */}
+          <div className="mb-6">
+            <CompanyCategoriesBadges
+              category={company.category}
+              subCategory={company.subCategory}
+              subArea={company.subArea}
+              countryCode={company.country.code}
+              citySlug={company.city.slug}
+            />
+          </div>
 
           <CompanyHeader company={companyForComponents} />
           

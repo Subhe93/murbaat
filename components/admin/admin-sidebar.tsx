@@ -108,7 +108,9 @@ const getNavigation = (stats: DashboardStats) => [
     children: [
       { name: 'إعدادات عامة', href: '/admin/settings', icon: Settings },
       { name: 'البلدان والمدن', href: '/admin/settings/locations', icon: MapPin },
+      { name: 'المناطق الفرعية', href: '/admin/settings/sub-areas', icon: MapPin },
       { name: 'الفئات', href: '/admin/settings/categories', icon: Tag },
+      { name: 'التصنيفات الفرعية', href: '/admin/settings/subcategories', icon: Tag },
       { name: 'إدارة الكاش', href: '/admin/cache', icon: RefreshCw },
     ]
   },

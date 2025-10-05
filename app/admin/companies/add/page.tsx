@@ -43,6 +43,15 @@ interface City {
   id: string
   name: string
   slug: string
+  countryId: string
+}
+
+interface SubArea {
+  id: string
+  name: string
+  slug: string
+  cityId: string
+  countryId: string
 }
 
 interface Category {
@@ -52,11 +61,18 @@ interface Category {
   icon?: string
 }
 
+interface SubCategory {
+  id: string;
+  name: string;
+}
+
 export default function AddCompanyPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [countries, setCountries] = useState<Country[]>([])
   const [cities, setCities] = useState<City[]>([])
+  const [subAreas, setSubAreas] = useState<SubArea[]>([])
   const [categories, setCategories] = useState<Category[]>([])
+  const [subCategories, setSubCategories] = useState<SubCategory[]>([])
   const { data: session, status } = useSession()
   const router = useRouter()
 
@@ -67,8 +83,10 @@ export default function AddCompanyPage() {
     shortDescription: '',
     longDescription: '',
     categoryId: '',
+    subCategoryId: '',
     countryId: '',
     cityId: '',
+    subAreaId: '',
     address: '',
     phone: '',
     email: '',
@@ -243,6 +261,65 @@ export default function AddCompanyPage() {
 
     fetchCities()
   }, [formData.countryId])
+
+  // جلب المناطق الفرعية عند تغيير المدينة
+  useEffect(() => {
+    const fetchSubAreas = async () => {
+      if (formData.cityId) {
+        try {
+          const response = await fetch(`/api/admin/sub-areas/by-city/${formData.cityId}`, {
+            credentials: 'include'
+          })
+          if (response.ok) {
+            const data = await response.json()
+            console.log('SubAreas loaded for city:', formData.cityId, data?.length || 0)
+            setSubAreas(Array.isArray(data) ? data : [])
+          } else {
+            console.error('Failed to load sub-areas:', response.status)
+            toast.error('فشل في تحميل المناطق الفرعية', {
+              description: `رمز الخطأ: ${response.status}. يرجى المحاولة مرة أخرى.`,
+              duration: 4000,
+            })
+            setSubAreas([])
+          }
+        } catch (error) {
+          console.error('خطأ في جلب المناطق الفرعية:', error)
+          toast.error('خطأ في الاتصال بالخادم', {
+            description: 'تعذر تحميل المناطق الفرعية للمدينة المحددة. يرجى المحاولة مرة أخرى.',
+            duration: 4000,
+          })
+        }
+      } else {
+        setSubAreas([])
+        setFormData(prev => ({ ...prev, subAreaId: '' }))
+      }
+    }
+
+    fetchSubAreas()
+  }, [formData.cityId])
+
+  // Fetch sub-categories when category changes
+  useEffect(() => {
+    const fetchSubCategories = async () => {
+      if (formData.categoryId) {
+        try {
+          const response = await fetch(`/api/subcategories?categoryId=${formData.categoryId}`)
+          if (response.ok) {
+            const data = await response.json()
+            setSubCategories(data.subCategories || [])
+          } else {
+            setSubCategories([])
+          }
+        } catch (error) {
+          console.error('Failed to fetch sub-categories:', error)
+          setSubCategories([])
+        }
+      } else {
+        setSubCategories([])
+      }
+    }
+    fetchSubCategories()
+  }, [formData.categoryId])
 
   // دوال المساعدة
   const addService = () => {
@@ -526,7 +603,7 @@ export default function AddCompanyPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="category">الفئة *</Label>
-                    <Select value={formData.categoryId} onValueChange={(value) => setFormData(prev => ({ ...prev, categoryId: value }))}>
+                    <Select value={formData.categoryId} onValueChange={(value) => setFormData(prev => ({ ...prev, categoryId: value, subCategoryId: '' }))}>
                       <SelectTrigger>
                         <SelectValue placeholder={categories.length > 0 ? "اختر الفئة" : "جاري تحميل الفئات..."} />
                       </SelectTrigger>
@@ -542,6 +619,22 @@ export default function AddCompanyPage() {
                             جاري تحميل الفئات...
                           </div>
                         )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="subCategory">التصنيف الفرعي</Label>
+                    <Select value={formData.subCategoryId} onValueChange={(value) => setFormData(prev => ({ ...prev, subCategoryId: value }))} disabled={!formData.categoryId || subCategories.length === 0}>
+                      <SelectTrigger>
+                        <SelectValue placeholder={!formData.categoryId ? "اختر الفئة أولاً" : subCategories.length > 0 ? "اختر التصنيف الفرعي" : "لا توجد تصنيفات فرعية"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {subCategories.map((subCategory) => (
+                          <SelectItem key={subCategory.id} value={subCategory.id}>
+                            {subCategory.name}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -573,7 +666,7 @@ export default function AddCompanyPage() {
                   <Label htmlFor="city">المدينة *</Label>
                   <Select 
                     value={formData.cityId} 
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, cityId: value }))}
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, cityId: value, subAreaId: '' }))}
                     disabled={!formData.countryId}
                   >
                     <SelectTrigger>
@@ -599,6 +692,42 @@ export default function AddCompanyPage() {
                       )}
                     </SelectContent>
                   </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="subArea">المنطقة الفرعية</Label>
+                  <Select 
+                    value={formData.subAreaId || "none"} 
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, subAreaId: value === "none" ? "" : value }))}
+                    disabled={!formData.cityId}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={
+                        !formData.cityId 
+                          ? "اختر المدينة أولاً" 
+                          : subAreas.length > 0 
+                            ? "اختر المنطقة الفرعية (اختياري)" 
+                            : "جاري تحميل المناطق الفرعية..."
+                      } />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">لا يوجد</SelectItem>
+                      {subAreas.length > 0 ? (
+                        subAreas.map((subArea) => (
+                          <SelectItem key={subArea.id} value={subArea.id}>
+                            {subArea.name}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <div className="px-2 py-1.5 text-sm text-gray-500">
+                          {!formData.cityId ? "اختر المدينة أولاً" : "جاري تحميل المناطق الفرعية..."}
+                        </div>
+                      )}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-gray-500">
+                    اختياري - يمكن تحديد منطقة فرعية أكثر تحديداً داخل المدينة
+                  </p>
                 </div>
               </CardContent>
             </Card>
@@ -1308,4 +1437,3 @@ export default function AddCompanyPage() {
     </div>
   )
 }
-

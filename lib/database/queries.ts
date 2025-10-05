@@ -1,7 +1,12 @@
-import { prisma } from '@/lib/prisma'
-import { Prisma } from '@prisma/client'
-import { SearchFilters, SearchResult, CompanyWithRelations, ReviewWithRelations } from '@/lib/types/database'
-import { WorkingHoursService } from '@/lib/services/working-hours.service'
+import prisma from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
+import {
+  SearchFilters,
+  SearchResult,
+  CompanyWithRelations,
+  ReviewWithRelations,
+} from "@/lib/types/database";
+import { WorkingHoursService } from "@/lib/services/working-hours.service";
 
 // استعلامات البلدان
 export async function getCountries() {
@@ -12,11 +17,11 @@ export async function getCountries() {
         select: {
           cities: true,
           companies: true,
-        }
-      }
+        },
+      },
     },
-    orderBy: { name: 'asc' }
-  })
+    orderBy: { name: "asc" },
+  });
 }
 
 export async function getCountryByCode(code: string) {
@@ -25,15 +30,15 @@ export async function getCountryByCode(code: string) {
     include: {
       cities: {
         where: { isActive: true },
-        orderBy: { name: 'asc' }
+        orderBy: { name: "asc" },
       },
       companies: {
         where: { isActive: true },
         take: 10,
-        orderBy: { rating: 'desc' }
-      }
-    }
-  })
+        orderBy: { rating: "desc" },
+      },
+    },
+  });
 }
 
 // استعلامات المدن
@@ -41,18 +46,66 @@ export async function getCities(countryCode?: string) {
   return await prisma.city.findMany({
     where: {
       isActive: true,
-      ...(countryCode && { countryCode })
+      ...(countryCode && { countryCode }),
     },
     include: {
       country: true,
       _count: {
         select: {
-          companies: true
-        }
-      }
+          companies: true,
+        },
+      },
     },
-    orderBy: { name: 'asc' }
-  })
+    orderBy: { name: "asc" },
+  });
+}
+
+// استعلامات المناطق الفرعية
+export async function getSubAreas(cityId?: string, countryCode?: string) {
+  return await prisma.subArea.findMany({
+    where: {
+      isActive: true,
+      ...(cityId && { cityId }),
+      ...(countryCode && { countryCode }),
+    },
+    include: {
+      city: true,
+      country: true,
+      _count: {
+        select: {
+          companies: true,
+        },
+      },
+    },
+    orderBy: { name: "asc" },
+  });
+}
+
+export async function getSubAreaBySlug(slug: string) {
+  return await prisma.subArea.findUnique({
+    where: { slug },
+    include: {
+      city: true,
+      country: true,
+      companies: {
+        where: { isActive: true },
+        include: {
+          category: true,
+          _count: {
+            select: {
+              reviews: true,
+            },
+          },
+        },
+        orderBy: { rating: "desc" },
+      },
+      _count: {
+        select: {
+          companies: true,
+        },
+      },
+    },
+  });
 }
 
 export async function getCityBySlug(slug: string) {
@@ -66,14 +119,14 @@ export async function getCityBySlug(slug: string) {
           category: true,
           _count: {
             select: {
-              reviews: true
-            }
-          }
+              reviews: true,
+            },
+          },
         },
-        orderBy: { rating: 'desc' }
-      }
-    }
-  })
+        orderBy: { rating: "desc" },
+      },
+    },
+  });
 }
 
 // استعلامات الفئات
@@ -83,85 +136,133 @@ export async function getCategories() {
     include: {
       _count: {
         select: {
-          companies: true
-        }
-      }
+          companies: true,
+        },
+      },
     },
-    orderBy: { name: 'asc' }
-  })
+    orderBy: { name: "asc" },
+  });
 }
 
-export async function getCategoryBySlug(slug: string) {
+export async function getCategoryBySlug(slug: string, country: string) {
   return await prisma.category.findUnique({
     where: { slug },
     include: {
       companies: {
-        where: { isActive: true },
+        where: { isActive: true, country: { code: country } },
         include: {
           city: true,
-          country: true
+          country: true,
         },
-        orderBy: { rating: 'desc' }
-      }
-    }
-  })
+        orderBy: { rating: "desc" },
+      },
+    },
+  });
+}
+
+export async function getSubcategories(categorySlug: string) {
+  return await prisma.subCategory.findMany({
+    where: {
+      category: {
+        slug: categorySlug,
+      },
+      isActive: true,
+    },
+    select: {
+      id: true,
+      slug: true,
+      name: true,
+      description: true,
+      icon: true,
+      _count: {
+        select: {
+          companies: {
+            where: {
+              isActive: true,
+            },
+          },
+        },
+      },
+    },
+    orderBy: {
+      name: "asc",
+    },
+  });
+}
+
+export async function getSubcategoryBySlug(slug: string) {
+  return await prisma.subCategory.findUnique({
+    where: { slug },
+    include: {
+      category: true,
+    },
+  });
 }
 
 // استعلامات الشركات
-export async function getCompanies(filters: SearchFilters = {}): Promise<SearchResult<CompanyWithRelations>> {
+
+export async function getCompanies(
+  filters: SearchFilters = {}
+): Promise<SearchResult<CompanyWithRelations>> {
   const {
     query,
     country,
     city,
+    subArea,
     category,
+    subcategory,
     rating,
     verified,
     featured,
     page = 1,
     limit = 12,
-    sortBy = 'rating',
-    sortOrder = 'desc'
-  } = filters
+    sortBy = "rating",
+    sortOrder = "desc",
+  } = filters;
 
-  const skip = (page - 1) * limit
+  const skip = (page - 1) * limit;
 
   // بناء شروط البحث
   const where: Prisma.CompanyWhereInput = {
     isActive: true,
     ...(query && {
       OR: [
-        { name: { contains: query, mode: 'insensitive' } },
-        { description: { contains: query, mode: 'insensitive' } },
+        { name: { contains: query, mode: "insensitive" } },
+        { description: { contains: query, mode: "insensitive" } },
         { services: { has: query } },
         { specialties: { has: query } },
-        { tags: { some: { tagName: { contains: query, mode: 'insensitive' } } } }
-      ]
+        {
+          tags: { some: { tagName: { contains: query, mode: "insensitive" } } },
+        },
+      ],
     }),
     ...(country && { country: { code: country } }),
     ...(city && { city: { slug: city } }),
+    ...(subArea && { subArea: { slug: subArea } }),
     ...(category && { category: { slug: category } }),
+    ...(subcategory && { subCategory: { slug: subcategory } }),
     ...(rating && { rating: { gte: rating } }),
     ...(verified !== undefined && { isVerified: verified }),
-    ...(featured !== undefined && { isFeatured: featured })
-  }
+    ...(featured !== undefined && { isFeatured: featured }),
+  };
 
   // بناء ترتيب النتائج
   const orderBy: Prisma.CompanyOrderByWithRelationInput = (() => {
     switch (sortBy) {
-      case 'name':
-        return { name: sortOrder }
-      case 'rating':
-        return { rating: sortOrder }
-      case 'reviews':
-        return { reviewsCount: sortOrder }
-      case 'newest':
-        return { createdAt: 'desc' }
-      case 'oldest':
-        return { createdAt: 'asc' }
+      case "name":
+        return { name: sortOrder };
+      case "rating":
+        return { rating: sortOrder };
+      case "reviews":
+        return { reviewsCount: sortOrder };
+      case "newest":
+        return { createdAt: "desc" };
+      case "oldest":
+        return { createdAt: "asc" };
       default:
-        return { rating: 'desc' }
+        return { rating: "desc" };
     }
-  })()
+  })();
 
   const [companies, total] = await Promise.all([
     prisma.company.findMany({
@@ -169,28 +270,29 @@ export async function getCompanies(filters: SearchFilters = {}): Promise<SearchR
       include: {
         country: true,
         city: true,
+        subArea: true,
         category: true,
         images: {
           where: { isActive: true },
-          orderBy: { sortOrder: 'asc' }
+          orderBy: { sortOrder: "asc" },
         },
         tags: true,
         workingHours: true,
         socialMedia: {
-          where: { isActive: true }
+          where: { isActive: true },
         },
         reviews: {
           where: { isApproved: true },
           include: {
             images: true,
-            ratings: true
+            ratings: true,
           },
-          orderBy: { createdAt: 'desc' },
-          take: 3
+          orderBy: { createdAt: "desc" },
+          take: 3,
         },
         awards: {
           where: { isActive: true },
-          orderBy: { year: 'desc' }
+          orderBy: { year: "desc" },
         },
         owners: {
           include: {
@@ -199,18 +301,18 @@ export async function getCompanies(filters: SearchFilters = {}): Promise<SearchR
                 id: true,
                 name: true,
                 email: true,
-                avatar: true
-              }
-            }
-          }
-        }
+                avatar: true,
+              },
+            },
+          },
+        },
       },
       orderBy,
       skip,
-      take: limit
+      take: limit,
     }),
-    prisma.company.count({ where })
-  ])
+    prisma.company.count({ where }),
+  ]);
 
   return {
     data: companies,
@@ -218,25 +320,29 @@ export async function getCompanies(filters: SearchFilters = {}): Promise<SearchR
       page,
       limit,
       total,
-      totalPages: Math.ceil(total / limit)
-    }
-  }
+      totalPages: Math.ceil(total / limit),
+    },
+  };
 }
 
-export async function getCompanyBySlug(slug: string): Promise<CompanyWithRelations | null> {
+export async function getCompanyBySlug(
+  slug: string
+): Promise<CompanyWithRelations | null> {
   const company = await prisma.company.findUnique({
     where: { slug },
     include: {
       country: true,
       city: true,
       category: true,
+      subCategory: true,
+      subArea: true,
       images: {
         where: { isActive: true },
-        orderBy: { sortOrder: 'asc' }
+        orderBy: { sortOrder: "asc" },
       },
       tags: true,
       socialMedia: {
-        where: { isActive: true }
+        where: { isActive: true },
       },
       reviews: {
         where: { isApproved: true },
@@ -247,15 +353,15 @@ export async function getCompanyBySlug(slug: string): Promise<CompanyWithRelatio
             select: {
               id: true,
               name: true,
-              avatar: true
-            }
-          }
+              avatar: true,
+            },
+          },
         },
-        orderBy: { createdAt: 'desc' }
+        orderBy: { createdAt: "desc" },
       },
       awards: {
         where: { isActive: true },
-        orderBy: { year: 'desc' }
+        orderBy: { year: "desc" },
       },
       owners: {
         include: {
@@ -264,32 +370,32 @@ export async function getCompanyBySlug(slug: string): Promise<CompanyWithRelatio
               id: true,
               name: true,
               email: true,
-              avatar: true
-            }
-          }
-        }
-      }
-    }
-  })
+              avatar: true,
+            },
+          },
+        },
+      },
+    },
+  });
 
   if (!company) {
-    return null
+    return null;
   }
 
   // استخدام الخدمة الموحدة لجلب ساعات العمل
   try {
-    const workingHours = await WorkingHoursService.getWorkingHours(company.id)
+    const workingHours = await WorkingHoursService.getWorkingHours(company.id);
     return {
       ...company,
-      workingHours
-    } as CompanyWithRelations
+      workingHours,
+    } as CompanyWithRelations;
   } catch (error) {
-    console.error('خطأ في جلب ساعات العمل للشركة:', error)
+    console.error("خطأ في جلب ساعات العمل للشركة:", error);
     // إرجاع الشركة بدون ساعات العمل في حالة الخطأ
     return {
       ...company,
-      workingHours: []
-    } as CompanyWithRelations
+      workingHours: [],
+    } as CompanyWithRelations;
   }
 }
 
@@ -297,7 +403,7 @@ export async function getFeaturedCompanies(limit: number = 6) {
   return await prisma.company.findMany({
     where: {
       isActive: true,
-      isFeatured: true
+      isFeatured: true,
     },
     include: {
       country: true,
@@ -307,25 +413,27 @@ export async function getFeaturedCompanies(limit: number = 6) {
       _count: {
         select: {
           reviews: {
-            where: { isApproved: true }
-          }
-        }
-      }
+            where: { isApproved: true },
+          },
+        },
+      },
     },
-    orderBy: { rating: 'desc' },
-    take: limit
-  })
+    orderBy: { rating: "desc" },
+    take: limit,
+  });
 }
 
-export async function getSimilarCompanies(companySlug: string, categoryId: string, cityId: string, limit: number = 4) {
+export async function getSimilarCompanies(
+  companySlug: string,
+  categoryId: string,
+  cityId: string,
+  limit: number = 4
+) {
   return await prisma.company.findMany({
     where: {
       isActive: true,
       slug: { not: companySlug },
-      OR: [
-        { categoryId },
-        { cityId }
-      ]
+      OR: [{ categoryId }, { cityId }],
     },
     include: {
       city: true,
@@ -334,47 +442,46 @@ export async function getSimilarCompanies(companySlug: string, categoryId: strin
       _count: {
         select: {
           reviews: {
-            where: { isApproved: true }
-          }
-        }
-      }
+            where: { isApproved: true },
+          },
+        },
+      },
     },
-    orderBy: { rating: 'desc' },
-    take: limit
-  })
+    orderBy: { rating: "desc" },
+    take: limit,
+  });
 }
 
 // استعلامات المراجعات
-export async function getReviews(companyId?: string, filters: SearchFilters = {}): Promise<SearchResult<ReviewWithRelations>> {
-  const {
-    page = 1,
-    limit = 10,
-    sortBy = 'newest'
-  } = filters
+export async function getReviews(
+  companyId?: string,
+  filters: SearchFilters = {}
+): Promise<SearchResult<ReviewWithRelations>> {
+  const { page = 1, limit = 10, sortBy = "newest" } = filters;
 
-  const skip = (page - 1) * limit
+  const skip = (page - 1) * limit;
 
   const where: Prisma.ReviewWhereInput = {
     isApproved: true,
-    ...(companyId && { companyId })
-  }
+    ...(companyId && { companyId }),
+  };
 
   const orderBy: Prisma.ReviewOrderByWithRelationInput = (() => {
     switch (sortBy) {
-      case 'newest':
-        return { createdAt: 'desc' }
-      case 'oldest':
-        return { createdAt: 'asc' }
-      case 'highest':
-        return { rating: 'desc' }
-      case 'lowest':
-        return { rating: 'asc' }
-      case 'helpful':
-        return { helpfulCount: 'desc' }
+      case "newest":
+        return { createdAt: "desc" };
+      case "oldest":
+        return { createdAt: "asc" };
+      case "highest":
+        return { rating: "desc" };
+      case "lowest":
+        return { rating: "asc" };
+      case "helpful":
+        return { helpfulCount: "desc" };
       default:
-        return { createdAt: 'desc' }
+        return { createdAt: "desc" };
     }
-  })()
+  })();
 
   const [reviews, total] = await Promise.all([
     prisma.review.findMany({
@@ -389,16 +496,16 @@ export async function getReviews(companyId?: string, filters: SearchFilters = {}
             city: {
               select: {
                 name: true,
-                slug: true
-              }
+                slug: true,
+              },
             },
             country: {
               select: {
                 name: true,
-                code: true
-              }
-            }
-          }
+                code: true,
+              },
+            },
+          },
         },
         images: true,
         ratings: true,
@@ -408,28 +515,28 @@ export async function getReviews(companyId?: string, filters: SearchFilters = {}
               select: {
                 id: true,
                 name: true,
-                avatar: true
-              }
-            }
+                avatar: true,
+              },
+            },
           },
           orderBy: {
-            createdAt: 'asc'
-          }
+            createdAt: "asc",
+          },
         },
         user: {
           select: {
             id: true,
             name: true,
-            avatar: true
-          }
-        }
+            avatar: true,
+          },
+        },
       },
       orderBy,
       skip,
-      take: limit
+      take: limit,
     }),
-    prisma.review.count({ where })
-  ])
+    prisma.review.count({ where }),
+  ]);
 
   return {
     data: reviews,
@@ -437,15 +544,15 @@ export async function getReviews(companyId?: string, filters: SearchFilters = {}
       page,
       limit,
       total,
-      totalPages: Math.ceil(total / limit)
-    }
-  }
+      totalPages: Math.ceil(total / limit),
+    },
+  };
 }
 
 export async function getLatestReviews(limit: number = 6) {
   return await prisma.review.findMany({
     where: {
-      isApproved: true
+      isApproved: true,
     },
     include: {
       company: {
@@ -457,27 +564,27 @@ export async function getLatestReviews(limit: number = 6) {
           city: {
             select: {
               name: true,
-              slug: true
-            }
+              slug: true,
+            },
           },
           country: {
             select: {
               name: true,
-              code: true
-            }
-          }
-        }
+              code: true,
+            },
+          },
+        },
       },
       user: {
         select: {
           name: true,
-          avatar: true
-        }
-      }
+          avatar: true,
+        },
+      },
     },
-    orderBy: { createdAt: 'desc' },
-    take: limit
-  })
+    orderBy: { createdAt: "desc" },
+    take: limit,
+  });
 }
 
 // إنشاء شركة جديدة
@@ -487,9 +594,9 @@ export async function createCompany(data: Prisma.CompanyCreateInput) {
     include: {
       country: true,
       city: true,
-      category: true
-    }
-  })
+      category: true,
+    },
+  });
 }
 
 // إنشاء مراجعة جديدة
@@ -497,14 +604,14 @@ export async function createReview(data: Prisma.ReviewCreateInput) {
   const review = await prisma.review.create({
     data,
     include: {
-      company: true
-    }
-  })
+      company: true,
+    },
+  });
 
   // تحديث متوسط التقييم وعدد المراجعات
-  await updateCompanyRating(review.companyId)
+  await updateCompanyRating(review.companyId);
 
-  return review
+  return review;
 }
 
 // تحديث متوسط التقييم للشركة
@@ -512,48 +619,52 @@ export async function updateCompanyRating(companyId: string) {
   const reviews = await prisma.review.findMany({
     where: {
       companyId,
-      isApproved: true
+      isApproved: true,
     },
     select: {
-      rating: true
-    }
-  })
+      rating: true,
+    },
+  });
 
-  const totalReviews = reviews.length
-  const averageRating = totalReviews > 0 
-    ? reviews.reduce((sum, review) => sum + review.rating, 0) / totalReviews 
-    : 0
+  const totalReviews = reviews.length;
+  const averageRating =
+    totalReviews > 0
+      ? reviews.reduce((sum, review) => sum + review.rating, 0) / totalReviews
+      : 0;
 
   await prisma.company.update({
     where: { id: companyId },
     data: {
       rating: Math.round(averageRating * 10) / 10, // تقريب لرقم عشري واحد
-      reviewsCount: totalReviews
-    }
-  })
+      reviewsCount: totalReviews,
+    },
+  });
 }
 
 // إعادة حساب تقييمات جميع الشركات
 export async function recalculateAllCompanyRatings() {
   const companies = await prisma.company.findMany({
-    select: { id: true }
-  })
+    select: { id: true },
+  });
 
   for (const company of companies) {
-    await updateCompanyRating(company.id)
+    await updateCompanyRating(company.id);
   }
 
-  return companies.length
+  return companies.length;
 }
 
 // البحث المتقدم
-export async function searchCompanies(searchTerm: string, filters: SearchFilters = {}) {
-  const searchWords = searchTerm.trim().split(/\s+/)
-  
+export async function searchCompanies(
+  searchTerm: string,
+  filters: SearchFilters = {}
+) {
+  const searchWords = searchTerm.trim().split(/\s+/);
+
   return await getCompanies({
     ...filters,
-    query: searchTerm
-  })
+    query: searchTerm,
+  });
 }
 
 // الحصول على الإحصائيات العامة
@@ -565,19 +676,19 @@ export async function getOverviewStats() {
     pendingRequests,
     verifiedCompanies,
     featuredCompanies,
-    averageRatingResult
+    averageRatingResult,
   ] = await Promise.all([
     prisma.company.count({ where: { isActive: true } }),
     prisma.review.count({ where: { isApproved: true } }),
     prisma.user.count({ where: { isActive: true } }),
-    prisma.companyRequest.count({ where: { status: 'PENDING' } }),
+    prisma.companyRequest.count({ where: { status: "PENDING" } }),
     prisma.company.count({ where: { isActive: true, isVerified: true } }),
     prisma.company.count({ where: { isActive: true, isFeatured: true } }),
     prisma.review.aggregate({
       where: { isApproved: true },
-      _avg: { rating: true }
-    })
-  ])
+      _avg: { rating: true },
+    }),
+  ]);
 
   return {
     totalCompanies,
@@ -586,93 +697,95 @@ export async function getOverviewStats() {
     pendingRequests,
     verifiedCompanies,
     featuredCompanies,
-    averageRating: Math.round((averageRatingResult._avg.rating || 0) * 10) / 10
-  }
+    averageRating: Math.round((averageRatingResult._avg.rating || 0) * 10) / 10,
+  };
 }
 
 // الحصول على إحصائيات الشركة
 export async function getCompanyStats(companyId: string) {
-  const [
-    company,
-    reviewsStats,
-    monthlyReviews,
-    ratingDistribution
-  ] = await Promise.all([
-    prisma.company.findUnique({
-      where: { id: companyId },
-      select: {
-        id: true,
-        name: true,
-        rating: true,
-        reviewsCount: true,
-        createdAt: true
-      }
-    }),
-    prisma.review.aggregate({
-      where: { 
-        companyId,
-        isApproved: true 
-      },
-      _count: true,
-      _avg: { rating: true }
-    }),
-    prisma.review.groupBy({
-      by: ['createdAt'],
-      where: {
-        companyId,
-        isApproved: true,
-        createdAt: {
-          gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) // آخر 30 يوم
-        }
-      },
-      _count: true
-    }),
-    prisma.review.groupBy({
-      by: ['rating'],
-      where: {
-        companyId,
-        isApproved: true
-      },
-      _count: true
-    })
-  ])
+  const [company, reviewsStats, monthlyReviews, ratingDistribution] =
+    await Promise.all([
+      prisma.company.findUnique({
+        where: { id: companyId },
+        select: {
+          id: true,
+          name: true,
+          rating: true,
+          reviewsCount: true,
+          createdAt: true,
+        },
+      }),
+      prisma.review.aggregate({
+        where: {
+          companyId,
+          isApproved: true,
+        },
+        _count: true,
+        _avg: { rating: true },
+      }),
+      prisma.review.groupBy({
+        by: ["createdAt"],
+        where: {
+          companyId,
+          isApproved: true,
+          createdAt: {
+            gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // آخر 30 يوم
+          },
+        },
+        _count: true,
+      }),
+      prisma.review.groupBy({
+        by: ["rating"],
+        where: {
+          companyId,
+          isApproved: true,
+        },
+        _count: true,
+      }),
+    ]);
 
   return {
     company,
     totalReviews: reviewsStats._count,
     averageRating: Math.round((reviewsStats._avg.rating || 0) * 10) / 10,
     monthlyReviews: monthlyReviews.length,
-    ratingDistribution: ratingDistribution.map(item => ({
+    ratingDistribution: ratingDistribution.map((item) => ({
       rating: item.rating,
-      count: item._count
-    }))
-  }
+      count: item._count,
+    })),
+  };
 }
 
 // إنشاء طلب شركة جديدة
-export async function createCompanyRequest(data: Prisma.CompanyRequestCreateInput) {
+export async function createCompanyRequest(
+  data: Prisma.CompanyRequestCreateInput
+) {
   return await prisma.companyRequest.create({
-    data
-  })
+    data,
+  });
 }
 
 // الحصول على طلبات الشركات
-export async function getCompanyRequests(status?: string, page: number = 1, limit: number = 10) {
-  const skip = (page - 1) * limit
-  
+export async function getCompanyRequests(
+  status?: string,
+  page: number = 1,
+  limit: number = 10
+) {
+  const skip = (page - 1) * limit;
+
   const where: Prisma.CompanyRequestWhereInput = {
-    ...(status && { status: status as any })
-  }
+    ...(status && { status: status as any }),
+  };
 
   const [requests, total] = await Promise.all([
     prisma.companyRequest.findMany({
       where,
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       skip,
-      take: limit
+      take: limit,
     }),
-    prisma.companyRequest.count({ where })
-  ])
+    prisma.companyRequest.count({ where }),
+  ]);
 
   return {
     data: requests,
@@ -680,55 +793,61 @@ export async function getCompanyRequests(status?: string, page: number = 1, limi
       page,
       limit,
       total,
-      totalPages: Math.ceil(total / limit)
-    }
-  }
+      totalPages: Math.ceil(total / limit),
+    },
+  };
 }
 
 // الموافقة على طلب شركة
-export async function approveCompanyRequest(requestId: string, adminId: string) {
+export async function approveCompanyRequest(
+  requestId: string,
+  adminId: string
+) {
   const request = await prisma.companyRequest.findUnique({
-    where: { id: requestId }
-  })
+    where: { id: requestId },
+  });
 
   if (!request) {
-    throw new Error('طلب الشركة غير موجود')
+    throw new Error("طلب الشركة غير موجود");
   }
 
   // العثور على البلد والمدينة والفئة
   const [country, category] = await Promise.all([
     prisma.country.findUnique({ where: { code: request.country } }),
-    prisma.category.findUnique({ where: { slug: request.category } })
-  ])
+    prisma.category.findUnique({ where: { slug: request.category } }),
+  ]);
 
   if (!country || !category) {
-    throw new Error('البلد أو الفئة غير موجودة')
+    throw new Error("البلد أو الفئة غير موجودة");
   }
 
   // العثور على المدينة أو إنشاؤها
   let city = await prisma.city.findFirst({
     where: {
       name: request.city,
-      countryCode: request.country
-    }
-  })
+      countryCode: request.country,
+    },
+  });
 
   if (!city) {
     city = await prisma.city.create({
       data: {
-        slug: request.city.toLowerCase().replace(/\s+/g, '-'),
+        slug: request.city.toLowerCase().replace(/\s+/g, "-"),
         name: request.city,
         countryId: country.id,
         countryCode: request.country,
-        description: `مدينة ${request.city} في ${country.name}`
-      }
-    })
+        description: `مدينة ${request.city} في ${country.name}`,
+      },
+    });
   }
 
   // إنشاء الشركة
   const company = await prisma.company.create({
     data: {
-      slug: request.companyName.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now(),
+      slug:
+        request.companyName.toLowerCase().replace(/\s+/g, "-") +
+        "-" +
+        Date.now(),
       name: request.companyName,
       description: request.description,
       countryId: country.id,
@@ -738,24 +857,24 @@ export async function approveCompanyRequest(requestId: string, adminId: string) 
       email: request.email,
       website: request.website,
       address: request.address,
-      services: request.services.split(',').map(s => s.trim()),
-      isVerified: true
-    }
-  })
+      services: request.services.split(",").map((s) => s.trim()),
+      isVerified: true,
+    },
+  });
 
   // إنشاء مستخدم للمالك إذا لم يكن موجود
   let owner = await prisma.user.findUnique({
-    where: { email: request.ownerEmail }
-  })
+    where: { email: request.ownerEmail },
+  });
 
   if (!owner) {
     owner = await prisma.user.create({
       data: {
         email: request.ownerEmail,
         name: request.ownerName,
-        role: 'COMPANY_OWNER'
-      }
-    })
+        role: "COMPANY_OWNER",
+      },
+    });
   }
 
   // ربط المالك بالشركة
@@ -763,42 +882,52 @@ export async function approveCompanyRequest(requestId: string, adminId: string) 
     data: {
       companyId: company.id,
       userId: owner.id,
-      role: 'OWNER',
+      role: "OWNER",
       isPrimary: true,
-      permissions: ['view_company', 'edit_company', 'manage_reviews', 'manage_images', 'view_analytics']
-    }
-  })
+      permissions: [
+        "view_company",
+        "edit_company",
+        "manage_reviews",
+        "manage_images",
+        "view_analytics",
+      ],
+    },
+  });
 
   // تحديث حالة الطلب
   await prisma.companyRequest.update({
     where: { id: requestId },
     data: {
-      status: 'APPROVED',
+      status: "APPROVED",
       reviewedBy: adminId,
-      reviewedAt: new Date()
-    }
-  })
+      reviewedAt: new Date(),
+    },
+  });
 
-  return company
+  return company;
 }
 
 // رفض طلب شركة
-export async function rejectCompanyRequest(requestId: string, adminId: string, reason: string) {
+export async function rejectCompanyRequest(
+  requestId: string,
+  adminId: string,
+  reason: string
+) {
   return await prisma.companyRequest.update({
     where: { id: requestId },
     data: {
-      status: 'REJECTED',
+      status: "REJECTED",
       adminNotes: reason,
       reviewedBy: adminId,
-      reviewedAt: new Date()
-    }
-  })
+      reviewedAt: new Date(),
+    },
+  });
 }
 
 // تحديث إحصائيات يومية
 export async function updateDailyStats() {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
   const [
     totalCompanies,
@@ -806,7 +935,7 @@ export async function updateDailyStats() {
     totalUsers,
     newCompanies,
     newReviews,
-    newUsers
+    newUsers,
   ] = await Promise.all([
     prisma.company.count({ where: { isActive: true } }),
     prisma.review.count({ where: { isApproved: true } }),
@@ -814,22 +943,22 @@ export async function updateDailyStats() {
     prisma.company.count({
       where: {
         isActive: true,
-        createdAt: { gte: today }
-      }
+        createdAt: { gte: today },
+      },
     }),
     prisma.review.count({
       where: {
         isApproved: true,
-        createdAt: { gte: today }
-      }
+        createdAt: { gte: today },
+      },
     }),
     prisma.user.count({
       where: {
         isActive: true,
-        createdAt: { gte: today }
-      }
-    })
-  ])
+        createdAt: { gte: today },
+      },
+    }),
+  ]);
 
   return await prisma.dailyStats.upsert({
     where: { date: today },
@@ -839,7 +968,7 @@ export async function updateDailyStats() {
       totalUsers,
       newCompanies,
       newReviews,
-      newUsers
+      newUsers,
     },
     create: {
       date: today,
@@ -848,7 +977,7 @@ export async function updateDailyStats() {
       totalUsers,
       newCompanies,
       newReviews,
-      newUsers
-    }
-  })
+      newUsers,
+    },
+  });
 }
