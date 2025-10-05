@@ -19,9 +19,17 @@ interface SearchPageProps {
     q?: string
     country?: string
     city?: string
+    subArea?: string
     category?: string
+    subCategory?: string
     rating?: string
     verified?: string
+    featured?: string
+    hasWebsite?: string
+    hasPhone?: string
+    hasEmail?: string
+    hasImages?: string
+    hasWorkingHours?: string
     sort?: string
     page?: string
   }
@@ -32,9 +40,17 @@ async function SearchResults({ searchParams }: { searchParams: SearchPageProps['
     query: searchParams?.q,
     country: searchParams?.country,
     city: searchParams?.city,
+    subArea: searchParams?.subArea,
     category: searchParams?.category,
+    subCategory: searchParams?.subCategory,
     rating: searchParams?.rating ? parseFloat(searchParams.rating) : undefined,
     verified: searchParams?.verified === 'true' ? true : searchParams?.verified === 'false' ? false : undefined,
+    featured: searchParams?.featured === 'true' ? true : undefined,
+    hasWebsite: searchParams?.hasWebsite === 'true' ? true : undefined,
+    hasPhone: searchParams?.hasPhone === 'true' ? true : undefined,
+    hasEmail: searchParams?.hasEmail === 'true' ? true : undefined,
+    hasImages: searchParams?.hasImages === 'true' ? true : undefined,
+    hasWorkingHours: searchParams?.hasWorkingHours === 'true' ? true : undefined,
     sortBy: (searchParams?.sort as any) || 'rating',
     page: parseInt(searchParams?.page || '1'),
     limit: 20

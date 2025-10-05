@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import prisma from '@/lib/prisma';
 
 // GET - جلب المناطق الفرعية للواجهة الأمامية
 export async function GET(request: NextRequest) {
@@ -8,9 +8,10 @@ export async function GET(request: NextRequest) {
     const cityId = searchParams.get('cityId');
     const countryCode = searchParams.get('countryCode');
     const search = searchParams.get('search');
+    const activeOnly = searchParams.get('activeOnly') === 'true';
 
     const where: any = {
-      isActive: true,
+      ...(activeOnly && { isActive: true }),
     };
 
     if (cityId) {
@@ -35,14 +36,28 @@ export async function GET(request: NextRequest) {
         country: true,
         _count: {
           select: {
-            companies: true,
+            companies: {
+              where: { isActive: true }
+            },
           },
         },
       },
       orderBy: { name: 'asc' },
     });
 
-    return NextResponse.json(subAreas);
+    // تحويل البيانات لتتطابق مع الواجهة المطلوبة
+    const formattedSubAreas = subAreas.map(subArea => ({
+      id: subArea.id,
+      slug: subArea.slug,
+      name: subArea.name,
+      cityId: subArea.cityId,
+      companiesCount: subArea._count.companies,
+    }));
+
+    return NextResponse.json({ 
+      success: true,
+      subAreas: formattedSubAreas
+    });
   } catch (error) {
     console.error('خطأ في جلب المناطق الفرعية:', error);
     return NextResponse.json(

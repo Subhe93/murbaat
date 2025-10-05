@@ -8,16 +8,6 @@ export async function GET(request: NextRequest) {
     const countryCode = searchParams.get('countryCode')
     const activeOnly = searchParams.get('activeOnly') === 'true'
 
-    if (!countryId && !countryCode) {
-      return NextResponse.json(
-        { 
-          success: false,
-          error: 'معرف البلد أو كود البلد مطلوب' 
-        },
-        { status: 400 }
-      )
-    }
-
     const where: any = {
       ...(activeOnly && { isActive: true }),
       ...(countryId && { countryId }),

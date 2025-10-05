@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 interface Category {
   id: string;
@@ -29,10 +29,28 @@ interface City {
   };
 }
 
+interface SubArea {
+  id: string;
+  slug: string;
+  name: string;
+  cityId: string;
+  companiesCount: number;
+}
+
+interface SubCategory {
+  id: string;
+  slug: string;
+  name: string;
+  categoryId: string;
+  companiesCount: number;
+}
+
 interface FilterData {
   categories: Category[];
   countries: Country[];
   cities: City[];
+  subAreas: SubArea[];
+  subCategories: SubCategory[];
   loading: boolean;
   error: string | null;
 }
@@ -42,6 +60,8 @@ export function useFilterData() {
     categories: [],
     countries: [],
     cities: [],
+    subAreas: [],
+    subCategories: [],
     loading: true,
     error: null
   });
@@ -51,19 +71,28 @@ export function useFilterData() {
       try {
         setData(prev => ({ ...prev, loading: true, error: null }));
 
-        // جلب الفئات النشطة
-        const categoriesResponse = await fetch('/api/categories?activeOnly=true');
-        const categoriesData = await categoriesResponse.json();
+        // جلب جميع البيانات بشكل موازي
+        const [categoriesResponse, countriesResponse, subAreasResponse, subCategoriesResponse] = await Promise.all([
+          fetch('/api/categories?activeOnly=true'),
+          fetch('/api/countries?activeOnly=true'),
+          fetch('/api/sub-areas?activeOnly=true'),
+          fetch('/api/sub-categories?activeOnly=true'),
+        ]);
 
-        // جلب البلدان النشطة
-        const countriesResponse = await fetch('/api/countries?activeOnly=true');
-        const countriesData = await countriesResponse.json();
+        const [categoriesData, countriesData, subAreasData, subCategoriesData] = await Promise.all([
+          categoriesResponse.json(),
+          countriesResponse.json(),
+          subAreasResponse.json(),
+          subCategoriesResponse.json(),
+        ]);
 
         if (categoriesData.success && countriesData.success) {
           setData({
             categories: categoriesData.categories || [],
             countries: countriesData.countries || [],
             cities: [],
+            subAreas: subAreasData.subAreas || [],
+            subCategories: subCategoriesData.subCategories || [],
             loading: false,
             error: null
           });
@@ -83,7 +112,7 @@ export function useFilterData() {
     fetchData();
   }, []);
 
-  const fetchCitiesByCountry = async (countryCode: string) => {
+  const fetchCitiesByCountry = useCallback(async (countryCode: string) => {
     try {
       const response = await fetch(`/api/cities?countryCode=${countryCode}&activeOnly=true`);
       const data = await response.json();
@@ -105,7 +134,7 @@ export function useFilterData() {
       }));
       return [];
     }
-  };
+  }, []);
 
   return {
     ...data,

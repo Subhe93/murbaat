@@ -21,7 +21,9 @@ import {
   MapPin,
   Award,
   Upload,
-  RefreshCw
+  RefreshCw,
+  TrendingUp,
+  Zap
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
@@ -62,6 +64,18 @@ const getNavigation = (stats: DashboardStats) => [
       { name: 'جميع المراجعات', href: '/admin/reviews', icon: Eye },
       { name: 'في الانتظار', href: '/admin/reviews/pending', icon: FileText, badge: stats.pendingReviews.toString() },
       { name: 'البلاغات', href: '/admin/reports', icon: Shield, badge: stats.reportedReviews.toString() },
+    ]
+  },
+  {
+    name: 'صفحات التصنيف',
+    href: '/admin/ranking-pages',
+    icon: TrendingUp,
+    current: false,
+    badge: stats.rankingPages?.toString(),
+    children: [
+      { name: 'جميع الصفحات', href: '/admin/ranking-pages', icon: Eye },
+      { name: 'إضافة صفحة', href: '/admin/ranking-pages/new', icon: Plus },
+      { name: 'توليد تلقائي', href: '/admin/ranking-pages/generate', icon: Zap },
     ]
   },
   {
@@ -123,6 +137,7 @@ interface DashboardStats {
   pendingRequests: number
   reportedReviews: number
   notifications: number
+  rankingPages?: number
 }
 
 export function AdminSidebar() {
@@ -134,7 +149,8 @@ export function AdminSidebar() {
     totalUsers: 0,
     pendingRequests: 0,
     reportedReviews: 0,
-    notifications: 0
+    notifications: 0,
+    rankingPages: 0
   })
   const [memoryUsage, setMemoryUsage] = useState(0)
 
@@ -152,7 +168,8 @@ export function AdminSidebar() {
               totalUsers: data.totalUsers || 0,
               pendingRequests: data.pendingRequests || 0,
               reportedReviews: data.reportedReviews || 0,
-              notifications: data.notifications || 0
+              notifications: data.notifications || 0,
+              rankingPages: data.rankingPages || 0
             })
           }
         } else {
@@ -163,7 +180,8 @@ export function AdminSidebar() {
             totalUsers: 0,
             pendingRequests: 0,
             reportedReviews: 0,
-            notifications: 0
+            notifications: 0,
+            rankingPages: 0
           })
         }
       } catch (error) {
@@ -175,7 +193,8 @@ export function AdminSidebar() {
           totalUsers: 0,
           pendingRequests: 0,
           reportedReviews: 0,
-          notifications: 0
+          notifications: 0,
+          rankingPages: 0
         })
       }
     }

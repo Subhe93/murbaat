@@ -19,12 +19,27 @@ interface FilterOptions {
     id: string;
     name: string;
     slug: string;
+    country?: { code: string };
     companiesCount: number;
   }>;
   countries: Array<{
     id: string;
     code: string;
     name: string;
+    companiesCount: number;
+  }>;
+  subAreas?: Array<{
+    id: string;
+    name: string;
+    slug: string;
+    cityId?: string;
+    companiesCount: number;
+  }>;
+  subCategories?: Array<{
+    id: string;
+    name: string;
+    slug: string;
+    categoryId?: string;
     companiesCount: number;
   }>;
 }
@@ -41,9 +56,17 @@ interface AdvancedSearchFiltersProps {
     q?: string;
     country?: string;
     city?: string;
+    subArea?: string;
     category?: string;
+    subCategory?: string;
     rating?: string;
     verified?: string;
+    featured?: string;
+    hasWebsite?: string;
+    hasPhone?: string;
+    hasEmail?: string;
+    hasImages?: string;
+    hasWorkingHours?: string;
     sort?: string;
     page?: string;
   };
@@ -62,72 +85,161 @@ export function AdvancedSearchFilters({
   const router = useRouter();
   const searchParams = useSearchParams();
   
-  // استخدام hook لجلب البيانات النشطة
-  const { categories, countries, cities, loading, error, fetchCitiesByCountry } = useFilterData();
+  // استخدام hook لجلب البيانات النشطة (فقط إذا لم يتم تمرير filterOptions)
+  const filterDataHook = useFilterData();
+  const { 
+    categories: hookCategories, 
+    countries: hookCountries, 
+    cities: hookCities, 
+    subAreas: hookSubAreas,
+    subCategories: hookSubCategories,
+    loading: hookLoading, 
+    error: hookError, 
+    fetchCitiesByCountry 
+  } = filterDataHook;
+  
+  // استخدام البيانات من props إذا كانت متوفرة، وإلا استخدام البيانات من الـ hook
+  const categories = filterOptions?.categories || hookCategories;
+  const countries = filterOptions?.countries || hookCountries;
+  const cities = filterOptions?.cities || hookCities;
+  const subAreas = filterOptions?.subAreas || hookSubAreas;
+  const subCategories = filterOptions?.subCategories || hookSubCategories;
+  const loading = filterOptions ? false : hookLoading;
+  const error = filterOptions ? null : hookError;
   
   const [searchQuery, setSearchQuery] = useState(initialValues?.q || '');
   const [selectedCountry, setSelectedCountry] = useState(initialValues?.country || '');
   const [selectedCity, setSelectedCity] = useState(initialValues?.city || '');
+  const [selectedSubArea, setSelectedSubArea] = useState(initialValues?.subArea || '');
   const [selectedCategory, setSelectedCategory] = useState(initialValues?.category || '');
+  const [selectedSubCategory, setSelectedSubCategory] = useState(initialValues?.subCategory || '');
   const [selectedRating, setSelectedRating] = useState<number | null>(
     initialValues?.rating ? parseFloat(initialValues.rating) : null
   );
   const [isVerified, setIsVerified] = useState(initialValues?.verified === 'true');
+  const [isFeatured, setIsFeatured] = useState(initialValues?.featured === 'true');
+  const [hasWebsite, setHasWebsite] = useState(initialValues?.hasWebsite === 'true');
+  const [hasPhone, setHasPhone] = useState(initialValues?.hasPhone === 'true');
+  const [hasEmail, setHasEmail] = useState(initialValues?.hasEmail === 'true');
+  const [hasImages, setHasImages] = useState(initialValues?.hasImages === 'true');
+  const [hasWorkingHours, setHasWorkingHours] = useState(initialValues?.hasWorkingHours === 'true');
   const [sortBy, setSortBy] = useState(initialValues?.sort || 'rating');
   const [openNow, setOpenNow] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   
-  // جلب المدن عند تغيير البلد المحدد
+  // جلب المدن عند تغيير البلد المحدد (فقط إذا لم يتم تمرير filterOptions)
   useEffect(() => {
-    if (selectedCountry) {
-      fetchCitiesByCountry(selectedCountry);
-      setSelectedCity(''); // إعادة تعيين المدينة عند تغيير البلد
-    } else {
-      // إعادة تعيين المدينة عند إزالة البلد
+    if (!filterOptions) {
+      if (selectedCountry) {
+        fetchCitiesByCountry(selectedCountry);
+      }
+    }
+  }, [selectedCountry, fetchCitiesByCountry, filterOptions]);
+
+  // إعادة تعيين المدينة والمنطقة الفرعية عند تغيير البلد
+  useEffect(() => {
+    if (!initialValues?.city || initialValues.country !== selectedCountry) {
       setSelectedCity('');
+      setSelectedSubArea('');
     }
-  }, [selectedCountry, fetchCitiesByCountry]);
+  }, [selectedCountry]);
 
-  // إنشاء URL للبحث
-  const buildSearchUrl = (filters: any = {}) => {
-    const params = new URLSearchParams();
-    
-    if (filters.q || searchQuery) params.set('q', filters.q || searchQuery);
-    if (filters.country || selectedCountry) params.set('country', filters.country || selectedCountry);
-    if (filters.city || selectedCity) params.set('city', filters.city || selectedCity);
-    if (filters.category || selectedCategory) params.set('category', filters.category || selectedCategory);
-    if (filters.rating || selectedRating) params.set('rating', String(filters.rating || selectedRating));
-    if (filters.verified !== undefined || isVerified) params.set('verified', String(filters.verified !== undefined ? filters.verified : isVerified));
-    if (filters.sort || sortBy) params.set('sort', filters.sort || sortBy);
-    
-    // إضافة معامل المدينة إذا كانت محددة
-    if (selectedCity && selectedCity.trim() !== '') {
-      params.set('city', selectedCity);
-    }
-    
-    return `/search?${params.toString()}`;
-  };
-
+  // تطبيق الفلاتر
   const applyFilters = () => {
-    const url = buildSearchUrl();
-    router.push(url);
+    const filters: any = {};
+    
+    if (searchQuery) filters.q = searchQuery;
+    if (selectedCountry) filters.country = selectedCountry;
+    if (selectedCity) filters.city = selectedCity;
+    if (selectedSubArea) filters.subArea = selectedSubArea;
+    if (selectedCategory) filters.category = selectedCategory;
+    if (selectedSubCategory) filters.subCategory = selectedSubCategory;
+    if (selectedRating) filters.rating = selectedRating;
+    if (isVerified) filters.verified = true;
+    if (isFeatured) filters.featured = true;
+    if (hasWebsite) filters.hasWebsite = true;
+    if (hasPhone) filters.hasPhone = true;
+    if (hasEmail) filters.hasEmail = true;
+    if (hasImages) filters.hasImages = true;
+    if (hasWorkingHours) filters.hasWorkingHours = true;
+    if (sortBy) filters.sort = sortBy;
+    
+    if (onFiltersChange) {
+      // استخدام callback function (لصفحة ranking)
+      onFiltersChange(filters);
+    } else {
+      // استخدام router.push لتحديث URL (لصفحة البحث)
+      const params = new URLSearchParams();
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value) params.set(key, String(value));
+      });
+      router.push(`/search?${params.toString()}`);
+    }
   };
 
   const clearFilters = () => {
     setSearchQuery('');
     setSelectedCountry('');
     setSelectedCity('');
+    setSelectedSubArea('');
     setSelectedCategory('');
+    setSelectedSubCategory('');
     setSelectedRating(null);
     setIsVerified(false);
+    setIsFeatured(false);
+    setHasWebsite(false);
+    setHasPhone(false);
+    setHasEmail(false);
+    setHasImages(false);
+    setHasWorkingHours(false);
     setSortBy('rating');
     setOpenNow(false);
-    router.push('/search');
+    
+    if (onFiltersChange) {
+      onFiltersChange({});
+    } else {
+      router.push('/search');
+    }
   };
 
-  const filteredCities = selectedCountry 
-    ? cities.filter(city => city.country.code === selectedCountry)
-    : cities;
+  // تطبيق الفلاتر عند التحميل الأولي
+  useEffect(() => {
+    if (onFiltersChange) {
+      applyFilters();
+    }
+  }, []); // فقط عند التحميل الأول
+
+  // تطبيق الفلاتر عند تغيير البحث فقط (للبحث الفوري)
+  useEffect(() => {
+    if (searchQuery) {
+      const timer = setTimeout(() => {
+        applyFilters();
+      }, 500); // debounce
+      return () => clearTimeout(timer);
+    }
+  }, [searchQuery]);
+
+  // الحصول على القوائم المفلترة
+  const allCities = cities || [];
+  const filteredCities = selectedCountry
+    ? allCities.filter(city => city.country?.code === selectedCountry)
+    : allCities;
+
+  const allSubAreas = subAreas || [];
+  const filteredSubAreas = selectedCity
+    ? allSubAreas.filter(subArea => {
+        const cityData = allCities.find(c => c.slug === selectedCity);
+        return cityData && subArea.cityId === cityData.id;
+      })
+    : allSubAreas;
+
+  const allSubCategories = subCategories || [];
+  const filteredSubCategories = selectedCategory
+    ? allSubCategories.filter(subCat => {
+        const categoryData = (categories || []).find(c => c.slug === selectedCategory);
+        return categoryData && subCat.categoryId === categoryData.id;
+      })
+    : allSubCategories;
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 mb-8">
@@ -161,13 +273,6 @@ export function AdvancedSearchFilters({
             }
           }}
         />
-        <Button
-          onClick={applyFilters}
-          className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-blue-600 hover:bg-blue-700"
-          size="sm"
-        >
-          <Search className="h-4 w-4" />
-        </Button>
       </div>
 
       {/* Quick Filters */}
@@ -208,7 +313,7 @@ export function AdvancedSearchFilters({
         {selectedCategory && (
           <Badge variant="secondary" className="flex items-center">
             <Building2 className="h-3 w-3 ml-1" />
-            {categories.find(c => c.slug === selectedCategory)?.name || 'فئة'}
+            {(categories || []).find(c => c.slug === selectedCategory)?.name || 'فئة'}
             <X 
               className="h-3 w-3 mr-1 cursor-pointer" 
               onClick={() => setSelectedCategory('')}
@@ -219,7 +324,7 @@ export function AdvancedSearchFilters({
         {selectedCountry && (
           <Badge variant="secondary" className="flex items-center">
             <MapPin className="h-3 w-3 ml-1" />
-            {countries.find(c => c.code === selectedCountry)?.name}
+            {(countries || []).find(c => c.code === selectedCountry)?.name || 'دولة'}
             <X 
               className="h-3 w-3 mr-1 cursor-pointer" 
               onClick={() => setSelectedCountry('')}
@@ -230,10 +335,32 @@ export function AdvancedSearchFilters({
         {selectedCity && (
           <Badge variant="secondary" className="flex items-center">
             <MapPin className="h-3 w-3 ml-1" />
-            {filteredCities.find(c => c.slug === selectedCity)?.name || 'مدينة'}
+            {(cities || []).find(c => c.slug === selectedCity)?.name || 'مدينة'}
             <X 
               className="h-3 w-3 mr-1 cursor-pointer" 
               onClick={() => setSelectedCity('')}
+            />
+          </Badge>
+        )}
+
+        {selectedSubArea && (
+          <Badge variant="secondary" className="flex items-center">
+            <MapPin className="h-3 w-3 ml-1" />
+            {allSubAreas.find(s => s.slug === selectedSubArea)?.name || 'منطقة'}
+            <X 
+              className="h-3 w-3 mr-1 cursor-pointer" 
+              onClick={() => setSelectedSubArea('')}
+            />
+          </Badge>
+        )}
+
+        {selectedSubCategory && (
+          <Badge variant="secondary" className="flex items-center">
+            <Building2 className="h-3 w-3 ml-1" />
+            {allSubCategories.find(s => s.slug === selectedSubCategory)?.name || 'فئة فرعية'}
+            <X 
+              className="h-3 w-3 mr-1 cursor-pointer" 
+              onClick={() => setSelectedSubCategory('')}
             />
           </Badge>
         )}
@@ -244,6 +371,66 @@ export function AdvancedSearchFilters({
             <X 
               className="h-3 w-3 mr-1 cursor-pointer" 
               onClick={() => setIsVerified(false)}
+            />
+          </Badge>
+        )}
+
+        {isFeatured && (
+          <Badge variant="secondary" className="flex items-center">
+            مميزة فقط
+            <X 
+              className="h-3 w-3 mr-1 cursor-pointer" 
+              onClick={() => setIsFeatured(false)}
+            />
+          </Badge>
+        )}
+
+        {hasWebsite && (
+          <Badge variant="secondary" className="flex items-center">
+            لديها موقع إلكتروني
+            <X 
+              className="h-3 w-3 mr-1 cursor-pointer" 
+              onClick={() => setHasWebsite(false)}
+            />
+          </Badge>
+        )}
+
+        {hasPhone && (
+          <Badge variant="secondary" className="flex items-center">
+            لديها رقم هاتف
+            <X 
+              className="h-3 w-3 mr-1 cursor-pointer" 
+              onClick={() => setHasPhone(false)}
+            />
+          </Badge>
+        )}
+
+        {hasEmail && (
+          <Badge variant="secondary" className="flex items-center">
+            لديها بريد إلكتروني
+            <X 
+              className="h-3 w-3 mr-1 cursor-pointer" 
+              onClick={() => setHasEmail(false)}
+            />
+          </Badge>
+        )}
+
+        {hasImages && (
+          <Badge variant="secondary" className="flex items-center">
+            لديها صور
+            <X 
+              className="h-3 w-3 mr-1 cursor-pointer" 
+              onClick={() => setHasImages(false)}
+            />
+          </Badge>
+        )}
+
+        {hasWorkingHours && (
+          <Badge variant="secondary" className="flex items-center">
+            لديها ساعات عمل
+            <X 
+              className="h-3 w-3 mr-1 cursor-pointer" 
+              onClick={() => setHasWorkingHours(false)}
             />
           </Badge>
         )}
@@ -271,7 +458,7 @@ export function AdvancedSearchFilters({
                     disabled={loading}
                   >
                     <option value="">جميع الدول</option>
-                    {countries.map((country) => (
+                    {(countries || []).map((country) => (
                       <option key={country.code} value={country.code}>
                         {country.name} ({country.companiesCount})
                       </option>
@@ -283,9 +470,9 @@ export function AdvancedSearchFilters({
                     value={selectedCity}
                     onChange={(e) => {
                       setSelectedCity(e.target.value);
-                      console.log('تم تحديد المدينة:', e.target.value); // للتأكد من التحديث
+                      setSelectedSubArea(''); // إعادة تعيين المنطقة الفرعية عند تغيير المدينة
                     }}
-                    disabled={!selectedCountry || loading}
+                    disabled={(filterOptions ? false : !selectedCountry) || loading}
                   >
                     <option value="">جميع المدن</option>
                     {filteredCities.map((city) => (
@@ -294,6 +481,23 @@ export function AdvancedSearchFilters({
                       </option>
                     ))}
                   </select>
+                  
+                  {/* Sub Areas */}
+                  {allSubAreas.length > 0 && (
+                    <select
+                      className="w-full p-3 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white mt-3"
+                      value={selectedSubArea}
+                      onChange={(e) => setSelectedSubArea(e.target.value)}
+                      disabled={(filterOptions ? !selectedCity : !selectedCity) || loading}
+                    >
+                      <option value="">جميع المناطق الفرعية</option>
+                      {filteredSubAreas.map((subArea) => (
+                        <option key={subArea.slug} value={subArea.slug}>
+                          {subArea.name} ({subArea.companiesCount})
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
               </div>
             )}
@@ -308,16 +512,36 @@ export function AdvancedSearchFilters({
                 <select
                   className="w-full p-3 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  onChange={(e) => {
+                    setSelectedCategory(e.target.value);
+                    setSelectedSubCategory(''); // إعادة تعيين الفئة الفرعية عند تغيير الفئة
+                  }}
                   disabled={loading}
                 >
                   <option value="">جميع الفئات</option>
-                  {categories.map((category) => (
+                  {(categories || []).map((category) => (
                     <option key={category.slug} value={category.slug}>
                       {category.name} ({category.companiesCount})
                     </option>
                   ))}
                 </select>
+                
+                {/* Sub Categories */}
+                {allSubCategories.length > 0 && (
+                  <select
+                    className="w-full p-3 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white mt-3"
+                    value={selectedSubCategory}
+                    onChange={(e) => setSelectedSubCategory(e.target.value)}
+                    disabled={!selectedCategory || loading}
+                  >
+                    <option value="">جميع الفئات الفرعية</option>
+                    {filteredSubCategories.map((subCategory) => (
+                      <option key={subCategory.slug} value={subCategory.slug}>
+                        {subCategory.name} ({subCategory.companiesCount})
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
             )}
 
@@ -379,12 +603,96 @@ export function AdvancedSearchFilters({
                     htmlFor="verified"
                     className="text-sm text-gray-700 dark:text-gray-300 cursor-pointer"
                   >
-                    شركات موثقة فقط
+                    شركات موثقة فقط ✓
+                  </label>
+                </div>
+
+                <div className="flex items-center space-x-2 space-x-reverse">
+                  <Checkbox
+                    id="featured"
+                    checked={isFeatured}
+                    onCheckedChange={(checked) => setIsFeatured(!!checked)}
+                  />
+                  <label
+                    htmlFor="featured"
+                    className="text-sm text-gray-700 dark:text-gray-300 cursor-pointer"
+                  >
+                    شركات مميزة ⭐
+                  </label>
+                </div>
+
+                <div className="flex items-center space-x-2 space-x-reverse">
+                  <Checkbox
+                    id="hasWebsite"
+                    checked={hasWebsite}
+                    onCheckedChange={(checked) => setHasWebsite(!!checked)}
+                  />
+                  <label
+                    htmlFor="hasWebsite"
+                    className="text-sm text-gray-700 dark:text-gray-300 cursor-pointer"
+                  >
+                    لديها موقع إلكتروني 🌐
+                  </label>
+                </div>
+
+                <div className="flex items-center space-x-2 space-x-reverse">
+                  <Checkbox
+                    id="hasPhone"
+                    checked={hasPhone}
+                    onCheckedChange={(checked) => setHasPhone(!!checked)}
+                  />
+                  <label
+                    htmlFor="hasPhone"
+                    className="text-sm text-gray-700 dark:text-gray-300 cursor-pointer"
+                  >
+                    لديها رقم هاتف 📞
+                  </label>
+                </div>
+
+                <div className="flex items-center space-x-2 space-x-reverse">
+                  <Checkbox
+                    id="hasEmail"
+                    checked={hasEmail}
+                    onCheckedChange={(checked) => setHasEmail(!!checked)}
+                  />
+                  <label
+                    htmlFor="hasEmail"
+                    className="text-sm text-gray-700 dark:text-gray-300 cursor-pointer"
+                  >
+                    لديها بريد إلكتروني 📧
+                  </label>
+                </div>
+
+                <div className="flex items-center space-x-2 space-x-reverse">
+                  <Checkbox
+                    id="hasImages"
+                    checked={hasImages}
+                    onCheckedChange={(checked) => setHasImages(!!checked)}
+                  />
+                  <label
+                    htmlFor="hasImages"
+                    className="text-sm text-gray-700 dark:text-gray-300 cursor-pointer"
+                  >
+                    لديها صور 📷
+                  </label>
+                </div>
+
+                <div className="flex items-center space-x-2 space-x-reverse">
+                  <Checkbox
+                    id="hasWorkingHours"
+                    checked={hasWorkingHours}
+                    onCheckedChange={(checked) => setHasWorkingHours(!!checked)}
+                  />
+                  <label
+                    htmlFor="hasWorkingHours"
+                    className="text-sm text-gray-700 dark:text-gray-300 cursor-pointer"
+                  >
+                    لديها ساعات عمل 🕐
                   </label>
                 </div>
                 
-                <div>
-                  <label className="text-sm text-gray-700 dark:text-gray-300 block mb-2">
+                <div className="pt-3 border-t border-gray-200 dark:border-gray-600">
+                  <label className="text-sm text-gray-700 dark:text-gray-300 block mb-2 font-medium">
                     ترتيب النتائج:
                   </label>
                   <select
@@ -407,8 +715,10 @@ export function AdvancedSearchFilters({
             <Button variant="outline" onClick={clearFilters}>
               مسح الفلاتر
             </Button>
-            <Button onClick={applyFilters} className="bg-blue-600 hover:bg-blue-700">
-              <Search className="h-4 w-4 ml-2" />
+            <Button 
+              onClick={applyFilters}
+              className="bg-gradient-to-r from-brand-green to-brand-yellow hover:from-brand-green/90 hover:to-brand-yellow/90 text-white"
+            >
               تطبيق الفلاتر
             </Button>
           </div>

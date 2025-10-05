@@ -17,6 +17,9 @@ export async function GET() {
     const notifications = await prisma.notification.count({
       where: { isRead: false },
     });
+    const rankingPages = await prisma.rankingPage.count({
+      where: { isActive: true },
+    });
 
     return NextResponse.json({
       success: true,
@@ -26,6 +29,7 @@ export async function GET() {
       pendingRequests,
       reportedReviews,
       notifications,
+      rankingPages,
     });
   } catch (error) {
     console.error('Error fetching dashboard stats:', error);
