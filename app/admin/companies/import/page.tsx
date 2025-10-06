@@ -326,6 +326,21 @@ export default function ImportCompaniesPage() {
         </p>
       </div>
 
+      {/* الميزات الجديدة */}
+      <Alert className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+        <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+        <AlertDescription className="text-blue-900 dark:text-blue-100">
+          <div className="space-y-2">
+            <div className="font-semibold">✨ ميزات جديدة متاحة الآن!</div>
+            <ul className="list-disc list-inside space-y-1 text-sm">
+              <li><strong>الفئات الفرعية (SubCategories):</strong> صنّف شركاتك بدقة أكبر داخل كل فئة رئيسية</li>
+              <li><strong>المناطق الفرعية (Sub Areas):</strong> حدد الحي أو المنطقة بالضبط داخل المدينة</li>
+              <li>كلا الحقلين <strong>اختياريان</strong> ولن يؤثران على عملية الاستيراد</li>
+            </ul>
+          </div>
+        </AlertDescription>
+      </Alert>
+
       {/* الفئات المتاحة */}
       <AvailableCategories />
 
@@ -357,26 +372,36 @@ export default function ImportCompaniesPage() {
                 />
               </div>
               
-              <div className="flex items-center justify-between">
-                <Label htmlFor="createCategories">إنشاء الفئات المفقودة</Label>
-                <Switch
-                  id="createCategories"
-                  checked={settings.createMissingCategories}
-                  onCheckedChange={(checked) => 
-                    setSettings(prev => ({ ...prev, createMissingCategories: checked }))
-                  }
-                />
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="createCategories">إنشاء الفئات المفقودة</Label>
+                  <Switch
+                    id="createCategories"
+                    checked={settings.createMissingCategories}
+                    onCheckedChange={(checked) => 
+                      setSettings(prev => ({ ...prev, createMissingCategories: checked }))
+                    }
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  سيتم أيضاً إنشاء الفئات الفرعية (SubCategories) الجديدة
+                </p>
               </div>
               
-              <div className="flex items-center justify-between">
-                <Label htmlFor="createCities">إنشاء المدن المفقودة</Label>
-                <Switch
-                  id="createCities"
-                  checked={settings.createMissingCities}
-                  onCheckedChange={(checked) => 
-                    setSettings(prev => ({ ...prev, createMissingCities: checked }))
-                  }
-                />
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="createCities">إنشاء المدن المفقودة</Label>
+                  <Switch
+                    id="createCities"
+                    checked={settings.createMissingCities}
+                    onCheckedChange={(checked) => 
+                      setSettings(prev => ({ ...prev, createMissingCities: checked }))
+                    }
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  سيتم أيضاً إنشاء المناطق الفرعية (Sub Areas) الجديدة
+                </p>
               </div>
             </div>
             
@@ -497,8 +522,17 @@ export default function ImportCompaniesPage() {
           <Alert className="mt-4">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              <strong>تنسيق الملف المتوقع:</strong> يجب أن يحتوي ملف CSV على الأعمدة التالية:
-              Nom, Note, Catégorie, Adresse, Téléphone, SiteWeb, Images, Reviews
+              <div className="space-y-2">
+                <div>
+                  <strong>الحقول المطلوبة:</strong> Nom, Catégorie, Country, City
+                </div>
+                <div>
+                  <strong>الحقول الاختيارية:</strong> SubCategory, SubArea, Note, Adresse, Téléphone, SiteWeb, Images, Reviews
+                </div>
+                <div className="text-sm text-muted-foreground mt-2">
+                  💡 يمكنك الآن تحديد الفئة الفرعية (SubCategory) والمنطقة الفرعية (SubArea) لتصنيف أدق
+                </div>
+              </div>
             </AlertDescription>
           </Alert>
         </CardContent>
@@ -524,24 +558,44 @@ export default function ImportCompaniesPage() {
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
+                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead className="bg-gray-50 dark:bg-gray-800">
                       <tr>
-                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">اسم الشركة</th>
-                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">الفئة</th>
-                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">العنوان</th>
-                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">الهاتف</th>
-                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">التقييم</th>
+                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">اسم الشركة</th>
+                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">الفئة</th>
+                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">الفئة الفرعية</th>
+                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">المدينة</th>
+                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">المنطقة الفرعية</th>
+                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">الهاتف</th>
+                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">التقييم</th>
                       </tr>
                     </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
+                    <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
                       {previewData.slice(0, 5).map((row, index) => (
                         <tr key={index}>
-                          <td className="px-4 py-2 text-sm text-gray-900">{row.Nom}</td>
-                          <td className="px-4 py-2 text-sm text-gray-900">{row.Catégorie}</td>
-                          <td className="px-4 py-2 text-sm text-gray-900">{row.Adresse}</td>
-                          <td className="px-4 py-2 text-sm text-gray-900">{row.Téléphone}</td>
-                          <td className="px-4 py-2 text-sm text-gray-900">{row.Note}</td>
+                          <td className="px-4 py-2 text-sm text-gray-900 dark:text-gray-100">{row.Nom || '-'}</td>
+                          <td className="px-4 py-2 text-sm text-gray-900 dark:text-gray-100">{row.Catégorie || '-'}</td>
+                          <td className="px-4 py-2 text-sm">
+                            {row.SubCategory || row.subCategory || row['Sub Category'] ? (
+                              <Badge variant="secondary" className="text-xs">
+                                {row.SubCategory || row.subCategory || row['Sub Category']}
+                              </Badge>
+                            ) : (
+                              <span className="text-gray-400 dark:text-gray-600">-</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-2 text-sm text-gray-900 dark:text-gray-100">{row.City || row.city || '-'}</td>
+                          <td className="px-4 py-2 text-sm">
+                            {row.SubArea || row.subArea || row['Sub Area'] ? (
+                              <Badge variant="outline" className="text-xs">
+                                {row.SubArea || row.subArea || row['Sub Area']}
+                              </Badge>
+                            ) : (
+                              <span className="text-gray-400 dark:text-gray-600">-</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-2 text-sm text-gray-900 dark:text-gray-100">{row.Téléphone || '-'}</td>
+                          <td className="px-4 py-2 text-sm text-gray-900 dark:text-gray-100">{row.Note || '-'}</td>
                         </tr>
                       ))}
                     </tbody>
