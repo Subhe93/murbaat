@@ -83,6 +83,20 @@ export class CompanyImportService {
         };
       }
 
+      // معالجة الفئة الفرعية (اختياري)
+      let subCategory = null;
+      if (cleanData.subCategory) {
+        subCategory = await this.processSubCategory(
+          cleanData.subCategory,
+          category.id,
+          settings.createMissingCategories
+        );
+        // الفئة الفرعية اختيارية، لذا لن نفشل العملية إذا لم نجدها
+        if (!subCategory) {
+          console.log(`تحذير: لم يتم العثور على الفئة الفرعية "${cleanData.subCategory}" - سيتم تخطيها`);
+        }
+      }
+
       // معالجة الموقع (البلد والمدينة)
       let location;
       if (cleanData.country && cleanData.city) {
@@ -107,12 +121,29 @@ export class CompanyImportService {
         };
       }
 
+      // معالجة المنطقة الفرعية (اختياري)
+      let subArea = null;
+      if (cleanData.subArea) {
+        subArea = await this.processSubArea(
+          cleanData.subArea,
+          location.city.id,
+          location.country.id,
+          settings.createMissingCities
+        );
+        // المنطقة الفرعية اختيارية، لذا لن نفشل العملية إذا لم نجدها
+        if (!subArea) {
+          console.log(`تحذير: لم يتم العثور على المنطقة الفرعية "${cleanData.subArea}" - سيتم تخطيها`);
+        }
+      }
+
       // إنشاء الشركة
       const company = await this.createCompany({
         ...cleanData,
         categoryId: category.id,
+        subCategoryId: subCategory?.id || null,
         cityId: location.city.id,
         countryId: location.country.id,
+        subAreaId: subArea?.id || null,
       });
 
       let imagesDownloaded = 0;
@@ -412,6 +443,9 @@ export class CompanyImportService {
       // إضافة دعم أعمدة منفصلة للدولة والمدينة
       country: row.Country?.trim() || row.country?.trim() || "",
       city: row.City?.trim() || row.city?.trim() || "",
+      // إضافة دعم المنطقة الفرعية والفئة الفرعية
+      subArea: row.SubArea?.trim() || row.subArea?.trim() || row['Sub Area']?.trim() || "",
+      subCategory: row.SubCategory?.trim() || row.subCategory?.trim() || row['Sub Category']?.trim() || "",
     };
   }
 
@@ -437,6 +471,10 @@ export class CompanyImportService {
     return this.categoryMapper.mapCategory(categoryName, createMissing);
   }
 
+  private async processSubCategory(subCategoryName: string, categoryId: string, createMissing: boolean) {
+    return this.categoryMapper.mapSubCategory(subCategoryName, categoryId, createMissing);
+  }
+
   private async processLocation(address: string, createMissing: boolean) {
     return this.locationMapper.mapLocation(address, createMissing);
   }
@@ -451,6 +489,10 @@ export class CompanyImportService {
       cityName,
       createMissing
     );
+  }
+
+  private async processSubArea(subAreaName: string, cityId: string, countryId: string, createMissing: boolean) {
+    return this.locationMapper.mapSubArea(subAreaName, cityId, countryId, createMissing);
   }
 
   private async createCompany(data: any) {
@@ -535,7 +577,9 @@ export class CompanyImportService {
           ? data.description.substring(0, 150)
           : undefined,
         categoryId: data.categoryId,
+        subCategoryId: data.subCategoryId || null,
         cityId: data.cityId,
+        subAreaId: data.subAreaId || null,
         countryId: data.countryId,
         phone: data.phone || null,
         email: data.email || null,

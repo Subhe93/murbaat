@@ -294,4 +294,101 @@ export class LocationMappingService {
       (!countryId || city.countryId === countryId)
     )
   }
+
+  // مطابقة المنطقة الفرعية
+  private existingSubAreas: any[] = []
+  private subAreasLoaded = false
+
+  // تحميل جميع المناطق الفرعية الموجودة
+  private async loadExistingSubAreas() {
+    if (!this.subAreasLoaded) {
+      this.existingSubAreas = await prisma.subArea.findMany({
+        select: { id: true, name: true, slug: true, cityId: true, countryId: true, cityCode: true, countryCode: true }
+      })
+      this.subAreasLoaded = true
+      console.log(`تم تحميل ${this.existingSubAreas.length} منطقة فرعية من قاعدة البيانات`)
+    }
+  }
+
+  // مطابقة المنطقة الفرعية
+  async mapSubArea(subAreaName: string, cityId: string, countryId: string, createMissing: boolean = true) {
+    if (!subAreaName || !cityId || !countryId) return null
+
+    await this.loadExistingSubAreas()
+    const trimmedName = subAreaName.trim()
+    console.log(`محاولة مطابقة المنطقة الفرعية: "${trimmedName}" في المدينة ${cityId}`)
+
+    // البحث الأول: مطابقة دقيقة في نفس المدينة
+    let matchedSubArea = this.existingSubAreas.find(subArea => 
+      subArea.name === trimmedName && subArea.cityId === cityId
+    )
+
+    if (matchedSubArea) {
+      console.log(`✅ مطابقة منطقة فرعية دقيقة: "${trimmedName}" -> "${matchedSubArea.name}"`)
+      return matchedSubArea
+    }
+
+    // البحث الثاني: مطابقة مع تجاهل حالة الأحرف
+    matchedSubArea = this.existingSubAreas.find(subArea => 
+      subArea.name.toLowerCase() === trimmedName.toLowerCase() && subArea.cityId === cityId
+    )
+
+    if (matchedSubArea) {
+      console.log(`✅ مطابقة منطقة فرعية مع تجاهل الأحرف: "${trimmedName}" -> "${matchedSubArea.name}"`)
+      return matchedSubArea
+    }
+
+    // البحث الثالث: مطابقة جزئية
+    matchedSubArea = this.existingSubAreas.find(subArea => 
+      (subArea.name.toLowerCase().includes(trimmedName.toLowerCase()) ||
+       trimmedName.toLowerCase().includes(subArea.name.toLowerCase())) &&
+      subArea.cityId === cityId
+    )
+
+    if (matchedSubArea) {
+      console.log(`✅ مطابقة منطقة فرعية جزئية: "${trimmedName}" -> "${matchedSubArea.name}"`)
+      return matchedSubArea
+    }
+
+    // إنشاء منطقة فرعية جديدة
+    if (createMissing) {
+      const subAreaSlug = this.generateSlugFromName(trimmedName)
+      const city = await prisma.city.findUnique({ where: { id: cityId } })
+      const country = await prisma.country.findUnique({ where: { id: countryId } })
+      
+      const newSubArea = await prisma.subArea.create({
+        data: {
+          slug: subAreaSlug,
+          name: trimmedName,
+          cityId: cityId,
+          cityCode: city?.slug || 'xx',
+          countryId: countryId,
+          countryCode: country?.code || 'xx',
+          description: `منطقة ${trimmedName}`,
+          companiesCount: 0
+        }
+      })
+      console.log(`تم إنشاء منطقة فرعية جديدة: "${trimmedName}"`)
+      return newSubArea
+    }
+
+    console.log(`لم يتم العثور على منطقة فرعية مطابقة لـ: "${trimmedName}"`)
+    return null
+  }
+
+  async getAllSubAreas() {
+    await this.loadExistingSubAreas()
+    return this.existingSubAreas
+  }
+
+  async searchSubAreas(searchTerm: string, cityId?: string) {
+    await this.loadExistingSubAreas()
+    const term = searchTerm.toLowerCase().trim()
+    
+    return this.existingSubAreas.filter(subArea => 
+      (subArea.name.toLowerCase().includes(term) ||
+       subArea.slug.toLowerCase().includes(term)) &&
+      (!cityId || subArea.cityId === cityId)
+    )
+  }
 }

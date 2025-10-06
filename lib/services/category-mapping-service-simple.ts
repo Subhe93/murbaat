@@ -175,4 +175,101 @@ export class CategoryMappingService {
       cat.slug.toLowerCase().includes(term)
     )
   }
+
+  // مطابقة الفئات الفرعية
+  private existingSubCategories: any[] = []
+  private subCategoriesLoaded = false
+
+  // تحميل جميع الفئات الفرعية الموجودة في قاعدة البيانات
+  private async loadExistingSubCategories() {
+    if (!this.subCategoriesLoaded) {
+      this.existingSubCategories = await prisma.subCategory.findMany({
+        select: { id: true, name: true, slug: true, icon: true, categoryId: true }
+      })
+      this.subCategoriesLoaded = true
+      console.log(`تم تحميل ${this.existingSubCategories.length} فئة فرعية من قاعدة البيانات`)
+    }
+  }
+
+  // مطابقة الفئة الفرعية
+  async mapSubCategory(subCategoryName: string, categoryId: string, createMissing: boolean = true) {
+    if (!subCategoryName || !categoryId) return null
+
+    // تحميل الفئات الفرعية الموجودة
+    await this.loadExistingSubCategories()
+    
+    const trimmedName = subCategoryName.trim()
+    console.log(`محاولة مطابقة الفئة الفرعية: "${trimmedName}" في الفئة ${categoryId}`)
+    
+    // البحث الأول: مطابقة دقيقة تماماً في نفس الفئة الرئيسية
+    let matchedSubCategory = this.existingSubCategories.find(subCat => 
+      subCat.name === trimmedName && subCat.categoryId === categoryId
+    )
+
+    if (matchedSubCategory) {
+      console.log(`✅ مطابقة فئة فرعية دقيقة: "${trimmedName}" -> "${matchedSubCategory.name}"`)
+      return matchedSubCategory
+    }
+
+    // البحث الثاني: مطابقة دقيقة مع تجاهل حالة الأحرف
+    matchedSubCategory = this.existingSubCategories.find(subCat => 
+      subCat.name.toLowerCase() === trimmedName.toLowerCase() && subCat.categoryId === categoryId
+    )
+
+    if (matchedSubCategory) {
+      console.log(`✅ مطابقة فئة فرعية مع تجاهل الأحرف: "${trimmedName}" -> "${matchedSubCategory.name}"`)
+      return matchedSubCategory
+    }
+
+    // البحث الثالث: مطابقة جزئية (يحتوي على النص) في نفس الفئة الرئيسية
+    matchedSubCategory = this.existingSubCategories.find(subCat => 
+      (subCat.name.toLowerCase().includes(trimmedName.toLowerCase()) ||
+       trimmedName.toLowerCase().includes(subCat.name.toLowerCase())) &&
+      subCat.categoryId === categoryId
+    )
+
+    if (matchedSubCategory) {
+      console.log(`✅ مطابقة فئة فرعية جزئية: "${trimmedName}" -> "${matchedSubCategory.name}"`)
+      return matchedSubCategory
+    }
+
+    // إنشاء فئة فرعية جديدة
+    if (createMissing) {
+      const slug = this.generateSlugFromName(trimmedName)
+      
+      const newSubCategory = await prisma.subCategory.create({
+        data: {
+          slug,
+          name: trimmedName, // استخدام الاسم كما هو في CSV
+          icon: 'Tag',
+          description: `فئة فرعية ${trimmedName}`,
+          categoryId: categoryId
+        }
+      })
+      
+      console.log(`تم إنشاء فئة فرعية جديدة: "${trimmedName}"`)
+      return newSubCategory
+    }
+
+    console.log(`لم يتم العثور على فئة فرعية مطابقة لـ: "${trimmedName}"`)
+    return null
+  }
+
+  // دالة لعرض جميع الفئات الفرعية المتاحة
+  async getAllSubCategories() {
+    await this.loadExistingSubCategories()
+    return this.existingSubCategories
+  }
+
+  // دالة للبحث المرن في الفئات الفرعية
+  async searchSubCategories(searchTerm: string, categoryId?: string) {
+    await this.loadExistingSubCategories()
+    const term = searchTerm.toLowerCase().trim()
+    
+    return this.existingSubCategories.filter(subCat => 
+      (subCat.name.toLowerCase().includes(term) ||
+       subCat.slug.toLowerCase().includes(term)) &&
+      (!categoryId || subCat.categoryId === categoryId)
+    )
+  }
 }
