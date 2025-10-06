@@ -251,7 +251,7 @@ export default async function CategoryPage({ params, searchParams = {} }: Catego
           <SubcategoriesEnhanced subcategories={subcategories} country={params.country} category={params.category} />
           
           {/* Sub Areas Section */}
-          {subAreas.length > 0 && (
+          {/* {subAreas.length > 0 && (
             <div className="mt-12">
               <SubAreasGrid 
                 subAreas={subAreas}
@@ -260,7 +260,7 @@ export default async function CategoryPage({ params, searchParams = {} }: Catego
                 citySlug="all"
               />
             </div>
-          )}
+          )} */}
           
           <div className="mt-12">
             <div className="flex justify-between items-center mb-6">

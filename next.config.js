@@ -227,18 +227,10 @@ const nextConfig = {
   },
 
   // Rewrite rules للـ SEO
-  async rewrites() {
-    return [
-      {
-        source: "/sitemap.xml",
-        destination: "/api/sitemap",
-      },
-      {
-        source: "/robots.txt",
-        destination: "/api/robots",
-      },
-    ];
-  },
+  // تم إزالة rewrites لـ sitemap و robots لاستخدام app/sitemap.ts و app/robots.ts
+  // async rewrites() {
+  //   return [];
+  // },
 };
 
 module.exports = nextConfig;
