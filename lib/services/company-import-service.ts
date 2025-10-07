@@ -318,7 +318,7 @@ export class CompanyImportService {
       const categoryKey = category.toLowerCase().trim();
       const baseDescription =
         categoryDescriptions[categoryKey] ||
-        `شركة ${companyName} متخصصة في ${category}`;
+        `${companyName} متخصصة في ${category}`;
 
       return `${companyName} - ${baseDescription}`;
     };
