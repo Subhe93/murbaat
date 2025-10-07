@@ -123,7 +123,7 @@ export async function generateMetadata({
             url: baseUrl + company.mainImage,   
             width: 1200,
             height: 630,
-            alt: `صورة شركة ${company.name}`,
+            alt: `صورة  ${company.name}`,
           }
         ] : [],
         locale: 'ar_SA',
@@ -191,7 +191,7 @@ export default async function CompanyPage({
                 </svg>
               </div>
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-                الشركة متوقفة حالياً
+                الصفحة متوقفة حالياً
               </h1>
               <p className="text-gray-600 dark:text-gray-400 mb-6">
                 عذراً، هذه الشركة متوقفة مؤقتاً عن العمل. يرجى المحاولة مرة أخرى لاحقاً أو التواصل معنا للمزيد من المعلومات.
@@ -201,7 +201,7 @@ export default async function CompanyPage({
                   href={`/country/${company.country.code}/city/${company.city.slug}`}
                   className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
                 >
-                  تصفح شركات أخرى في {company.city.name}
+                  تصفح شركات خدمات ومطاعم أخرى في {company.city.name}
                 </Link>
                 <Link 
                   href="/"
@@ -244,8 +244,8 @@ export default async function CompanyPage({
     const similarCompaniesSchema = similarCompanies.length > 0 ? generateItemListSchema(
       similarCompanies as unknown as CompanyWithRelations[],
       baseUrl,
-      `شركات مشابهة لـ ${company.name}`,
-      `شركات ${company.category.name} مشابهة في ${company.city.name}`
+      ` مشابهة لـ ${company.name}`,
+      ` ${company.category.name} مشابهة في ${company.city.name}`
     ) : null;
 
     return (
@@ -433,7 +433,7 @@ export default async function CompanyPage({
             href="/search" 
             className="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700 transition-colors"
           >
-            البحث عن شركة
+            البحث
           </Link>
         </div>
       </div>

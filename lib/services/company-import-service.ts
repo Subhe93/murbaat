@@ -572,7 +572,7 @@ export class CompanyImportService {
         name: data.name,
         slug,
         description:
-          data.description || `شركة ${data.name} متخصصة في ${data.category}`,
+          data.description || `${data.name} اختصاص في ${data.category}`,
         shortDescription: data.description
           ? data.description.substring(0, 150)
           : undefined,
@@ -623,7 +623,7 @@ export class CompanyImportService {
               companyId,
               imageUrl: result.localPath!,
               sortOrder: startIndex + index,
-              altText: `صورة الشركة ${index + 1}`,
+              altText: `صورة ${index + 1}`,
             },
           });
           if (!firstLocalPath && result.localPath) {

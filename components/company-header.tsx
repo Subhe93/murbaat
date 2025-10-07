@@ -72,11 +72,11 @@ export function CompanyHeader({ company }: CompanyHeaderProps) {
   return (
     <>
       {/* Debug Warning */}
-      {hasRatingDiscrepancy && (
+      {/* {hasRatingDiscrepancy && (
         <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-2 rounded mb-4">
           <strong>تنبيه:</strong> هناك تناقض في التقييمات. التقييم: {company.rating}، عدد المراجعات: {company.reviewsCount}
         </div>
-      )}
+      )} */}
 
       {/* Desktop Hero */}
       <div className="hidden md:block relative mb-8">
