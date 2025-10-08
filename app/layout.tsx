@@ -9,7 +9,13 @@ const cairo = Cairo({ subsets: ['arabic'] });
 export const metadata: Metadata = {
   title: 'مربعات | دليل الشركات والخدمات',
   description: 'دليل شامل للشركات والخدمات العربية والعالمية. اكتشف الشركات والخدمات في جميع أنحاء العالم',
+  icons: {
+    icon: '/img/murabaat-logo.png',
+    shortcut: '/img/murabaat-logo.png',
+    apple: '/img/murabaat-logo.png',
+  },
 };
+
 
 export default function RootLayout({
   children,
