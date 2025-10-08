@@ -147,7 +147,7 @@ export function Navbar() {
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
             <Link href="/" className="flex items-center space-x-3 space-x-reverse">
-              <div className="w-8 h-8 bg-gradient-to-r from-brand-green to-brand-yellow rounded-lg flex items-center justify-center">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center">
                 {/* <span className="text-white font-bold text-sm">دش</span> */}
                 <img src="/img/murabaat-logo.png" alt="Logo" className="w-6 h-6 object-contain" />
               </div>
