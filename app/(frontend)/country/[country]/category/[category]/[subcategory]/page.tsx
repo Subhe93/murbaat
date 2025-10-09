@@ -39,7 +39,7 @@ export async function generateMetadata({
     }
 
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://murabaat.com';
-    const subcategoryUrl = `${baseUrl}/${params.country}/category/${params.category}/${params.subcategory}`;
+    const subcategoryUrl = `${baseUrl}/country/${params.country}/category/${params.category}/${params.subcategory}`;
     const countryName = country?.name || params.country.toUpperCase();
 
     return {

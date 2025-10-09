@@ -99,7 +99,7 @@ export async function generateMetadata({
     }
 
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://murabaat.com';
-    const companyUrl = `${baseUrl}/${company.slug}`;
+    const companyUrl = `${baseUrl}/country/${company.slug}`;
 
     return {
       title: `${company.name} | ${company.category.name} في ${company.city.name}`,

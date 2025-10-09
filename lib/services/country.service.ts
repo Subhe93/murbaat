@@ -448,7 +448,7 @@ export const generateCountryMetadata = async (countryCode: string) => {
     openGraph: {
       title: `${country.name} - دليل الشركات والخدمات`,
       description: `اكتشف أفضل ${country.companiesCount} شركة في ${country.name}`,
-      url: `${baseUrl}/${country.code}`,
+      url: `${baseUrl}/country/${country.code}`,
       images: country.image
         ? [
             {
@@ -469,7 +469,7 @@ export const generateCountryMetadata = async (countryCode: string) => {
     },
 
     alternates: {
-      canonical: `${baseUrl}/${country.code}`,
+      canonical: `${baseUrl}/country/${country.code}`,
     },
   };
 };
