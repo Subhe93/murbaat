@@ -174,12 +174,12 @@ export default async function SubcategoryPage({ params, searchParams = {} }: Sub
           }}
         />
 
-        <script
+        {/* <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify(organizationSchema),
           }}
-        />
+        /> */}
 
         <script
           type="application/ld+json"

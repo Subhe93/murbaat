@@ -102,7 +102,8 @@ export async function generateMetadata({
     const companyUrl = `${baseUrl}/country/${company.slug}`;
 
     return {
-      title: `${company.name} | ${company.category.name} في ${company.city.name}`,
+      title: `${company.name} | مربعات`,
+            // title: `${company.name} | ${company.category.name} في ${company.city.name}`,
       description: company.shortDescription || company.description || `${company.name} - شركة ${company.category.name} في ${company.city.name}، ${company.country.name}. تقييم ${company.rating}/5 من ${company.reviewsCount} مراجعة.`,
       keywords: [
         company.name,

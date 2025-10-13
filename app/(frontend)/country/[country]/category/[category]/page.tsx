@@ -210,12 +210,12 @@ export default async function CategoryPage({ params, searchParams = {} }: Catego
         />
 
         {/* JSON-LD Schema للمنظمة */}
-        <script
+        {/* <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify(organizationSchema),
           }}
-        />
+        /> */}
 
         {/* JSON-LD Schema للموقع */}
         <script

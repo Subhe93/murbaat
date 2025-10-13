@@ -127,9 +127,9 @@ export function CompanySearch({ currentCity, currentCountry, currentCompanySlug,
     <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
       <div className="flex items-center space-x-3 space-x-reverse mb-6">
         <Search className="h-6 w-6 text-blue-600" />
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+        <p className="text-2xl font-bold text-gray-900 dark:text-white">
           البحث في شركات {cityName}
-        </h2>
+        </p>
       </div>
 
       {/* Search Form */}

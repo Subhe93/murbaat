@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { MapPin, Phone, Mail, Globe, Building2, Tag, ChevronDown, ChevronRight, Facebook, Twitter, Instagram, Linkedin, Youtube } from 'lucide-react';
 import { TiktokIcon } from '@/components/icons/tiktok-icon';
 import { Badge } from '@/components/ui/badge';
@@ -13,6 +13,27 @@ interface CompanyInfoProps {
 export function CompanyInfo({ company }: CompanyInfoProps) {
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [showFullAddress, setShowFullAddress] = useState(false);
+
+  // Function to safely convert textarea text to HTML with performance optimization
+  const formatTextToHtml = useMemo(() => {
+    return (text: string) => {
+      if (!text) return '';
+      
+      // Escape HTML characters to prevent XSS
+      const escapedText = text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#x27;');
+      
+      // Convert line breaks to <br> tags
+      return escapedText
+        .replace(/\r\n/g, '<br>') // Windows line breaks first
+        .replace(/\r/g, '<br>')   // Mac line breaks
+        .replace(/\n/g, '<br>');  // Unix line breaks
+    };
+  }, []);
 
   const getSocialIcon = (platform: string) => {
     switch (platform) {
@@ -54,6 +75,11 @@ export function CompanyInfo({ company }: CompanyInfoProps) {
 
   const longDescription = company.longDescription || company.description;
   const isLongDescription = longDescription && longDescription.length > 200;
+  
+  // Memoize formatted HTML to avoid re-computation on every render
+  const formattedDescription = useMemo(() => {
+    return formatTextToHtml(longDescription);
+  }, [longDescription, formatTextToHtml]);
 
   return (
     <div className="space-y-8">
@@ -74,9 +100,15 @@ export function CompanyInfo({ company }: CompanyInfoProps) {
           <div className="text-gray-600 dark:text-gray-400 leading-relaxed">
             {isLongDescription ? (
               <div>
-                <p className={`${showFullDescription ? '' : 'line-clamp-3'}`}>
-                  {longDescription}
-                </p>
+                <div 
+                  className={`${showFullDescription ? '' : 'overflow-hidden'}`}
+                  style={!showFullDescription ? { 
+                    display: '-webkit-box',
+                    WebkitLineClamp: 3,
+                    WebkitBoxOrient: 'vertical'
+                  } : {}}
+                  dangerouslySetInnerHTML={{ __html: formattedDescription }}
+                />
                 <button
                   onClick={() => setShowFullDescription(!showFullDescription)}
                   className="mt-2 text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center space-x-1 space-x-reverse"
@@ -90,7 +122,7 @@ export function CompanyInfo({ company }: CompanyInfoProps) {
                 </button>
               </div>
             ) : (
-              <p>{longDescription}</p>
+              <div dangerouslySetInnerHTML={{ __html: formattedDescription }} />
             )}
           </div>
         </div>

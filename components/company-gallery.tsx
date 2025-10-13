@@ -113,7 +113,7 @@ export function CompanyGallery({ images = defaultImages }: CompanyGalleryProps) 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">معرض الصور</h2>
+        <p className="text-2xl font-bold text-gray-900 dark:text-white">معرض الصور</p>
         <div className="flex items-center space-x-2 space-x-reverse">
           {galleryImages.length > 1 && (
             <Button
