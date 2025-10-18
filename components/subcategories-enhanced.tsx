@@ -70,7 +70,9 @@ interface Subcategory {
 
 interface SubcategoriesEnhancedProps {
   subcategories: Subcategory[];
-  country: string;
+  country?: string;
+  city?: string;
+  subArea?: string;
   category: string;
 }
 
@@ -133,7 +135,7 @@ const getIcon = (iconName?: string) => {
   return IconComponent;
 };
 
-export function SubcategoriesEnhanced({ subcategories, country, category }: SubcategoriesEnhancedProps) {
+export function SubcategoriesEnhanced({ subcategories, country, city, subArea, category }: SubcategoriesEnhancedProps) {
   if (!subcategories || subcategories.length === 0) {
     return null;
   }
@@ -156,7 +158,17 @@ export function SubcategoriesEnhanced({ subcategories, country, category }: Subc
           return (
             <Link 
               key={subcategory.id} 
-              href={`/country/${country}/category/${category}/${subcategory.slug}`}
+              href={(() => {
+                if (subArea && city && country) {
+                  return `/country/${country}/city/${city}/sub-area/${subArea}/category/${category}/${subcategory.slug}`;
+                } else if (city && country) {
+                  return `/country/${country}/city/${city}/category/${category}/${subcategory.slug}`;
+                } else if (country) {
+                  return `/country/${country}/category/${category}/${subcategory.slug}`;
+                } else {
+                  return `/category/${category}/${subcategory.slug}`;
+                }
+              })()}
               className="group"
               style={{
                 animationDelay: `${index * 50}ms`,

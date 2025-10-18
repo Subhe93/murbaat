@@ -1,12 +1,13 @@
 export const dynamic = "force-dynamic";
 import { Metadata } from 'next';
+import { applySeoOverride } from '@/lib/seo/overrides'
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { getSubcategoryBySlug, getCompanies, getCategoryBySlug, getCountryByCode } from '@/lib/database/queries';
-import { applySeoOverride } from '@/lib/seo/overrides';
+import { getSubcategoryBySlug, getCompanies, getCategoryBySlug, getAllCountries } from '@/lib/database/queries';
 import { CategoryHeader } from '@/components/category-header';
 import { CompaniesGrid } from '@/components/companies-grid';
 import { AdvancedSearchFilters } from '@/components/advanced-search-filters';
+import { CountriesGrid } from '@/components/countries-grid';
 import { Building2 } from 'lucide-react';
 import { 
   generateItemListSchema,
@@ -25,55 +26,46 @@ import {
 export async function generateMetadata({ 
   params 
 }: { 
-  params: { country: string; category: string; subcategory: string } 
+  params: { category: string; subcategory: string } 
 }): Promise<Metadata> {
   try {
-    const [subcategory, country] = await Promise.all([
+    const [subcategory, category] = await Promise.all([
       getSubcategoryBySlug(params.subcategory),
-      getCountryByCode(params.country)
+      getCategoryBySlug(params.category)
     ]);
     
-    if (!subcategory) {
+    if (!subcategory || !category) {
       return {
-        title: 'الفئة الفرعية غير موجودة',
-        description: 'هذه الفئة الفرعية غير متوفرة في دليل الشركات',
+        title: 'فئة فرعية غير موجودة',
       };
     }
 
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://murabaat.com';
-    const subcategoryUrl = `${baseUrl}/country/${params.country}/category/${params.category}/${params.subcategory}`;
-    const countryName = country?.name || params.country.toUpperCase();
-
     const overridden = await applySeoOverride({
-      title: `افضل 10 ${subcategory.name} في ${countryName} | ${subcategory.category.name} | مربعات`,
-      description: `اكتشف أفضل ${subcategory.name} في ${countryName}.`,
-    }, `/country/${params.country}/category/${params.category}/${params.subcategory}`, 
-    { targetType: 'SUBCATEGORY', targetId: subcategory.id });
+      title: `${subcategory.name} | ${category.name} | مربعات`,
+      description: subcategory.description || `اكتشف أفضل ${subcategory.name} في ${category.name} في مربعات`,
+    }, `/category/${category.slug}/${subcategory.slug}`, { targetType: 'SUBCATEGORY', targetId: subcategory.id })
 
     return {
-      ...overridden,
-      
+      title: overridden.title,
+      description: overridden.description,
+       keywords: overridden.keywords,
       openGraph: {
-        title: overridden.title,
-        description: overridden.description,
-        url: subcategoryUrl,
+    title: overridden.title,
+      description: overridden.description,    type: 'website',
       },
-
-      alternates: {
-        canonical: subcategoryUrl,
-      }
     };
   } catch (error) {
-    console.error('خطأ في generateMetadata للفئة الفرعية:', error);
+    console.error('خطأ في generateMetadata للفئة الفرعية العامة:', error);
     return {
       title: 'خطأ في تحميل الفئة الفرعية',
     };
   }
 }
 
-interface SubcategoryPageProps {
-  params: { country: string; category: string; subcategory: string }
+interface GlobalSubcategoryPageProps {
+  params: { category: string; subcategory: string }
   searchParams?: { 
+    country?: string
     city?: string
     rating?: string
     verified?: string
@@ -83,26 +75,24 @@ interface SubcategoryPageProps {
   }
 }
 
-export default async function SubcategoryPage({ params, searchParams = {} }: SubcategoryPageProps) {
+export default async function GlobalSubcategoryPage({ params, searchParams = {} }: GlobalSubcategoryPageProps) {
   try {
-    const [subcategory, category, country] = await Promise.all([
+    const [subcategory, category] = await Promise.all([
       getSubcategoryBySlug(params.subcategory),
-      getCategoryBySlug(params.category, params.country),
-      getCountryByCode(params.country)
+      getCategoryBySlug(params.category)
     ]);
 
-    if (!subcategory) {
-      notFound();
-    }
-    
-    if (!category) {
+    if (!subcategory || !category) {
       notFound();
     }
 
+    const allCountries = await getAllCountries();
+
+    // إعداد الفلاتر من searchParams
     const filters = {
-      country: params.country,
       category: params.category,
       subcategory: params.subcategory,
+      country: searchParams?.country,
       city: searchParams?.city,
       rating: searchParams?.rating ? parseFloat(searchParams.rating) : undefined,
       verified: searchParams?.verified === 'true' ? true : searchParams?.verified === 'false' ? false : undefined,
@@ -114,17 +104,27 @@ export default async function SubcategoryPage({ params, searchParams = {} }: Sub
 
     const companiesResult = await getCompanies(filters);
 
+    // Debug: Log the companies result
+    console.log('Global Subcategory Page Debug:', {
+      subcategoryName: subcategory.name,
+      categoryName: category.name,
+      filters,
+      companiesCount: companiesResult?.data?.length || 0,
+      totalCount: companiesResult?.pagination?.total || 0,
+    });
+
+    // Generate schemas for the subcategory page
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://murabaat.com';
     const itemListSchema = companiesResult.data && companiesResult.data.length > 0 ? generateItemListSchema(
       companiesResult.data,
       baseUrl,
-      ` ${subcategory.name}`,
-      subcategory.description || `دليل شامل لشركات ${subcategory.name} في المنطقة`
+      `شركات ${subcategory.name}`,
+      subcategory.description || `دليل شامل لشركات ${subcategory.name} في ${category.name} في مربعات`
     ) : null;
     const organizationSchema = generateOrganizationSchema(baseUrl);
     const websiteSchema = generateWebsiteSchema(baseUrl);
     
-    const countryName = country?.name || params.country.toUpperCase();
+    // Generate breadcrumb schema for global subcategory page
     const breadcrumbSchema = {
       "@context": "https://schema.org",
       "@type": "BreadcrumbList",
@@ -132,32 +132,45 @@ export default async function SubcategoryPage({ params, searchParams = {} }: Sub
         {
           "@type": "ListItem",
           "position": 1,
-          "item": baseUrl,
-          "name": "الرئيسية"
+          "name": "الرئيسية",
+          "item": baseUrl
         },
         {
-          "@type": "ListItem", 
+          "@type": "ListItem",
           "position": 2,
-          "item": `${baseUrl}/country/${params.country}`,
-          "name": countryName
+          "name": "جميع التصنيفات",
+          "item": `${baseUrl}/services`
         },
         {
           "@type": "ListItem",
           "position": 3,
-          "item": `${baseUrl}/country/${params.country}/category/${category.slug}`,
-          "name": category.name
+          "name": category.name,
+          "item": `${baseUrl}/category/${params.category}`
         },
         {
           "@type": "ListItem",
           "position": 4,
-          "item": `${baseUrl}/country/${params.country}/category/${category.slug}/${subcategory.slug}`,
-          "name": subcategory.name
+          "name": subcategory.name,
+          "item": `${baseUrl}/category/${params.category}/${params.subcategory}`
         }
       ]
     };
 
     return (
       <>
+        {/* JSON-LD Schema for SEO */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(organizationSchema),
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(websiteSchema),
+          }}
+        />
         {itemListSchema && (
           <script
             type="application/ld+json"
@@ -166,25 +179,10 @@ export default async function SubcategoryPage({ params, searchParams = {} }: Sub
             }}
           />
         )}
-
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify(breadcrumbSchema),
-          }}
-        />
-
-        {/* <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify(organizationSchema),
-          }}
-        /> */}
-
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify(websiteSchema),
           }}
         />
 
@@ -199,13 +197,13 @@ export default async function SubcategoryPage({ params, searchParams = {} }: Sub
               <BreadcrumbSeparator />
               <BreadcrumbItem>
                 <BreadcrumbLink asChild>
-                  <Link href={`/country/${params.country}`}>{countryName}</Link>
+                  <Link href="/services">جميع التصنيفات</Link>
                 </BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
                 <BreadcrumbLink asChild>
-                  <Link href={`/country/${params.country}/category/${category.slug}`}>{category.name}</Link>
+                  <Link href={`/category/${params.category}`}>{category.name}</Link>
                 </BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator />
@@ -222,7 +220,7 @@ export default async function SubcategoryPage({ params, searchParams = {} }: Sub
                 <Building2 className="h-6 w-6" />
               </div>
               <h1 className="text-3xl md:text-4xl font-bold">
-                {subcategory.name} في {countryName}
+                {subcategory.name}
               </h1>
             </div>
             
@@ -235,61 +233,60 @@ export default async function SubcategoryPage({ params, searchParams = {} }: Sub
               </p>
             )}
           </div>
-
+          
           <div className="mt-12">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                 {subcategory.name}
-              </h2>
-              <span className="text-gray-600 dark:text-gray-400">
-                {companiesResult.pagination.total} مرتبط
-              </span>
-            </div>
-            
-            <AdvancedSearchFilters 
-              showLocationFilter={true}
-              showCategoryFilter={false}
-              showRatingFilter={true}
-              showPriceFilter={true}
-              showHoursFilter={true}
+          <AdvancedSearchFilters 
+            filterOptions={{ countries: allCountries, categories: [], cities: [], subAreas: [], subCategories: [] }}
+            initialValues={{
+              country: searchParams?.country,
+              city: searchParams?.city,
+              rating: searchParams?.rating,
+              verified: searchParams?.verified,
+              q: searchParams?.search,
+              sort: searchParams?.sort,
+            }}
+          />
+          </div>
+
+          <div className="mt-8">
+            <CompaniesGrid 
+              companies={companiesResult.data || []}
+              pagination={companiesResult.pagination}
             />
-            
-            {companiesResult.data && companiesResult.data.length > 0 ? (
-              <CompaniesGrid 
-                companies={companiesResult.data} 
-                pagination={companiesResult.pagination}
-              />
-            ) : (
-              <div className="text-center py-12">
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                  لا توجد  في هذه الفئة الفرعية حالياً
-                </h3>
-                <p className="text-gray-600 dark:text-gray-400">
-                  يرجى المحاولة مرة أخرى لاحقاً أو تصفح فئات أخرى
-                </p>
-              </div>
-            )}
+          </div>
+
+          {/* عرض الدول المتاحة لهذا التصنيف الفرعي */}
+          <div className="mt-16">
+            <div className="text-center mb-8">
+              <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-4">
+                متوفر في الدول التالية
+              </h2>
+              <p className="text-gray-600 dark:text-gray-400">
+                اختر الدولة لعرض الشركات في هذا التصنيف الفرعي
+              </p>
+            </div>
+            <CountriesGrid countries={allCountries} categorySlug={params.category} subcategorySlug={params.subcategory} />
           </div>
         </div>
       </>
     );
-
+    
   } catch (error) {
-    console.error('خطأ في تحميل صفحة الفئة الفرعية:', error);
+    console.error('خطأ في تحميل صفحة الفئة الفرعية العامة:', error);
     
     return (
       <div className="container mx-auto px-4 py-16 text-center">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-          عذراً، حدث خطأ في تحميل الفئة الفرعية
+          عذراً، حدث خطأ في تحميل الصفحة
         </h1>
         <p className="text-gray-600 dark:text-gray-400 mb-8">
-          يرجى المحاولة مرة أخرى أو العودة للصفحة الرئيسية
+          يرجى المحاولة مرة أخرى أو إعادة تحميل الصفحة
         </p>
         <Link 
-          href="/" 
+          href={`/category/${params.category}`}
           className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
         >
-          العودة للرئيسية
+          العودة إلى {params.category}
         </Link>
       </div>
     );

@@ -14,9 +14,11 @@ interface Country {
 
 interface CountriesGridProps {
   countries: Country[];
+  categorySlug?: string;
+  subcategorySlug?: string;
 }
 
-export function CountriesGrid({ countries }: CountriesGridProps) {
+export function CountriesGrid({ countries, categorySlug, subcategorySlug }: CountriesGridProps) {
   // عدم عرض القسم إذا لم توجد بلدان
   if (!countries || countries.length === 0) {
     return (
@@ -45,13 +47,22 @@ export function CountriesGrid({ countries }: CountriesGridProps) {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-        {countries.map((country) => (
-          <Link
-            key={country.code}
-            href={`/country/${country.code}`}
-            className="group bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-4 hover:rotate-1 overflow-hidden animate-fade-in-up"
-            style={{ animationDelay: `${countries.indexOf(country) * 100}ms` }}
-          >
+        {countries.map((country) => {
+          // تحديد الرابط بناءً على وجود التصنيف أو التصنيف الفرعي
+          let href = `/country/${country.code}`;
+          if (categorySlug && subcategorySlug) {
+            href = `/country/${country.code}/category/${categorySlug}/${subcategorySlug}`;
+          } else if (categorySlug) {
+            href = `/country/${country.code}/category/${categorySlug}`;
+          }
+
+          return (
+            <Link
+              key={country.code}
+              href={href}
+              className="group bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-4 hover:rotate-1 overflow-hidden animate-fade-in-up"
+              style={{ animationDelay: `${countries.indexOf(country) * 100}ms` }}
+            >
             <div className="relative h-48 overflow-hidden">
               {country.image ? (
                 <Image
@@ -91,7 +102,8 @@ export function CountriesGrid({ countries }: CountriesGridProps) {
               </div>
             </div>
           </Link>
-        ))}
+          );
+        })}
       </div>
     </section>
   );

@@ -62,7 +62,7 @@ export function FeaturedCompanies({ companies: featuredCompanies }: FeaturedComp
         {featuredCompanies.map((company) => (
           <Link
             key={company.slug}
-            href={`/country/${company.city.country.code}/city/${company.city.slug}/company/${company.slug}`}
+            href={`/${company.slug}`}
             className="group bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-3 hover:scale-105 overflow-hidden animate-fade-in-up"
             style={{ animationDelay: `${featuredCompanies.indexOf(company) * 150}ms` }}
           >

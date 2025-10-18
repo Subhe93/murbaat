@@ -102,3 +102,5 @@ FAQPage للأسئلة الشائعة
 
 
 التحقق من المدينة مع الاسم عند استيراد الداتا
+yarn prisma migrate dev --name add_seo_overrides
+yarn prisma generate

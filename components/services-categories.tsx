@@ -25,6 +25,9 @@ interface ServiceCategory {
 
 interface ServiceCategoriesProps {
   categories: ServiceCategory[];
+  country?: string;
+  city?: string;
+  subArea?: string;
 }
 
 // خريطة الأيقونات
@@ -59,115 +62,14 @@ const colorOptions = [
   'bg-rose-500',
 ];
 
-const fallbackCategories: ServiceCategory[] = [
-  {
-    slug: 'technology',
-    name: 'التكنولوجيا',
-    icon: Laptop,
-    description: 'تطوير المواقع والتطبيقات',
-    color: 'bg-blue-500',
-    count: 120,
-  },
-  {
-    slug: 'healthcare',
-    name: 'الرعاية الصحية',
-    icon: Heart,
-    description: 'المستشفيات والعيادات',
-    color: 'bg-red-500',
-    count: 85,
-  },
-  {
-    slug: 'education',
-    name: 'التعليم',
-    icon: GraduationCap,
-    description: 'المدارس ومراكز التدريب',
-    color: 'bg-green-500',
-    count: 95,
-  },
-  {
-    slug: 'finance',
-    name: 'المالية',
-    icon: Banknote,
-    description: 'البنوك والاستثمار',
-    color: 'bg-yellow-500',
-    count: 65,
-  },
-  {
-    slug: 'food',
-    name: 'الأغذية',
-    icon: Utensils,
-    description: 'المطاعم والكافيهات',
-    color: 'bg-orange-500',
-    count: 150,
-  },
-  {
-    slug: 'retail',
-    name: 'التجارة',
-    icon: ShoppingBag,
-    description: 'المتاجر والتسوق',
-    color: 'bg-purple-500',
-    count: 110,
-  },
-  {
-    slug: 'automotive',
-    name: 'السيارات',
-    icon: Car,
-    description: 'صيانة وبيع السيارات',
-    color: 'bg-gray-600',
-    count: 75,
-  },
-  {
-    slug: 'real-estate',
-    name: 'العقارات',
-    icon: Home,
-    description: 'بيع وإيجار العقارات',
-    color: 'bg-indigo-500',
-    count: 90,
-  },
-  {
-    slug: 'business',
-    name: 'الأعمال',
-    icon: Briefcase,
-    description: 'الاستشارات والخدمات',
-    color: 'bg-teal-500',
-    count: 80,
-  },
-  {
-    slug: 'beauty',
-    name: 'التجميل',
-    icon: Scissors,
-    description: 'صالونات ومراكز التجميل',
-    color: 'bg-pink-500',
-    count: 60,
-  },
-  {
-    slug: 'maintenance',
-    name: 'الصيانة',
-    icon: Wrench,
-    description: 'خدمات الصيانة والإصلاح',
-    color: 'bg-amber-600',
-    count: 70,
-  },
-  {
-    slug: 'photography',
-    name: 'التصوير',
-    icon: Camera,
-    description: 'استوديوهات التصوير',
-    color: 'bg-violet-500',
-    count: 45,
-  },
-];
 
-export function ServicesCategories({ categories }: ServiceCategoriesProps) {
+export function ServicesCategories({ categories, country, city, subArea }: ServiceCategoriesProps) {
   // استخدام البيانات المرسلة أو البيانات الافتراضية
-  const displayCategories = categories.length > 0 ? categories.map((cat, index) => ({
+  const displayCategories = categories.map((cat, index) => ({
     ...cat,
     IconComponent: iconMap[cat.icon || 'briefcase'] || Briefcase,
     color: colorOptions[index % colorOptions.length],
-  })) : fallbackCategories.slice(0, 8).map((cat, index) => ({
-    ...cat,
-    IconComponent: cat.icon,
-    color: cat.color,
+    count: cat.companiesCount || 0,
   }));
   return (
     <section className="container mx-auto px-4">
@@ -186,7 +88,17 @@ export function ServicesCategories({ categories }: ServiceCategoriesProps) {
           return (
             <Link
               key={category.slug}
-              href={`/country/sy/category/${category.slug}`}
+              href={(() => {
+                if (subArea && city && country) {
+                  return `/country/${country}/city/${city}/sub-area/${subArea}/category/${category.slug}`;
+                } else if (city && country) {
+                  return `/country/${country}/city/${city}/category/${category.slug}`;
+                } else if (country) {
+                  return `/country/${country}/category/${category.slug}`;
+                } else {
+                  return `/category/${category.slug}`;
+                }
+              })()}
               className="group bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-3 hover:rotate-1 p-6 text-center animate-fade-in-up"
               style={{ animationDelay: `${displayCategories.indexOf(category) * 100}ms` }}
             >

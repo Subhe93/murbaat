@@ -7,12 +7,24 @@ import { FeaturedCompanies } from '@/components/featured-companies';
 import { LatestReviews } from '@/components/latest-reviews';
 import { ServicesCategories } from '@/components/services-categories';
 import { getHomePageData, getSiteStats, getAllCountries } from '@/lib/services/homepage.service';
-import { generateHomePageMetadata, generateJsonLd } from '@/lib/seo/metadata';
+import { generateHomePageMetadata, generateJsonLd, type SiteStats } from '@/lib/seo/metadata';
+import { applySeoOverride } from '@/lib/seo/overrides';
 
 // Generate dynamic metadata with stats for SEO
 export async function generateMetadata(): Promise<Metadata> {
   const stats = await getSiteStats();
-  return generateHomePageMetadata(stats);
+  const baseMetadata = generateHomePageMetadata(stats);
+  
+  const overridden = await applySeoOverride({
+    title: typeof baseMetadata.title === 'string' ? baseMetadata.title : 'مربعات - دليل الشركات العربية',
+    description: typeof baseMetadata.description === 'string' ? baseMetadata.description : 'دليل الشركات والخدمات في الوطن العربي'
+  }, '/', { targetType: 'CUSTOM_PATH', targetId: '/' });
+
+  return {
+    ...baseMetadata,
+    title: overridden.title,
+    description: overridden.description
+  };
 }
 
 export default async function HomePage() {
@@ -50,7 +62,12 @@ export default async function HomePage() {
         />
         
         <div className="space-y-12">
-          <HomeHero stats={stats} />
+          <HomeHero stats={{
+            totalCountries: stats.countriesCount,
+            totalCompanies: stats.companiesCount,
+            totalCategories: stats.categoriesCount,
+            totalReviews: stats.reviewsCount
+          }} />
           <ServicesCategories categories={data.categories} />
                 <div className="text-center mt-12">
         <Link

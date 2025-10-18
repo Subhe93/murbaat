@@ -1,9 +1,17 @@
 import { Metadata } from 'next';
+import { applySeoOverride } from '@/lib/seo/overrides';
 
-export const metadata: Metadata = {
-  title: 'من نحن | مربعات',
-  description: 'تعرف على مربعات ورسالتنا في تقديم دليل شامل للشركات العربية والعالمية',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const overridden = await applySeoOverride({
+    title: 'من نحن | مربعات',
+    description: 'تعرف على مربعات ورسالتنا في تقديم دليل شامل للشركات العربية والعالمية'
+  }, '/about', { targetType: 'CUSTOM_PATH', targetId: '/about' });
+
+  return {
+    title: overridden.title,
+    description: overridden.description,
+  };
+}
 
 export default function AboutPage() {
   return (

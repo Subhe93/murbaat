@@ -1,9 +1,18 @@
 import { Metadata } from 'next';
 
-export const metadata: Metadata = {
-  title: 'الشروط والأحكام | مربعات',
-  description: 'الشروط والأحكام الخاصة باستخدام موقع مربعات - دليل الشركات والخدمات',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { applySeoOverride } = await import('@/lib/seo/overrides');
+  
+  const overridden = await applySeoOverride({
+    title: 'الشروط والأحكام | مربعات',
+    description: 'الشروط والأحكام الخاصة باستخدام موقع مربعات - دليل الشركات والخدمات'
+  }, '/terms', { targetType: 'CUSTOM_PATH', targetId: '/terms' });
+
+  return {
+    title: overridden.title,
+    description: overridden.description,
+  };
+}
 
 export default function TermsOfService() {
   return (

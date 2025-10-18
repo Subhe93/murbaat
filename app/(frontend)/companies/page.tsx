@@ -5,15 +5,24 @@ import { AdvancedSearchFilters } from '@/components/advanced-search-filters';
 import { CompaniesGrid } from '@/components/companies-grid';
 import { getCompanies } from '@/lib/database/queries';
 
-export const metadata: Metadata = {
-  title: ' الشركات | مربعات - دليل الشركات',
-  description: 'ابحث عن الشركات والخدمات باستخدام الفلاتر المتقدمة. ابحث حسب الموقع، الفئة، التقييم، والمزيد.',
-  keywords: 'البحث عن شركات, فلاتر البحث, دليل الشركات, البحث المتقدم',
-  openGraph: {
-    title: 'الشركات - مربعات',
-    description: 'ابحث عن الشركات والخدمات المناسبة باستخدام الفلاتر المتقدمة',
-  }
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { applySeoOverride } = await import('@/lib/seo/overrides');
+  
+  const overridden = await applySeoOverride({
+    title: 'الشركات | مربعات - دليل الشركات',
+    description: 'ابحث عن الشركات والخدمات باستخدام الفلاتر المتقدمة. ابحث حسب الموقع، الفئة، التقييم، والمزيد.'
+  }, '/companies', { targetType: 'CUSTOM_PATH', targetId: '/companies' });
+
+  return {
+    title: overridden.title,
+    description: overridden.description,
+    keywords: 'البحث عن شركات, فلاتر البحث, دليل الشركات, البحث المتقدم',
+    openGraph: {
+      title: overridden.title,
+      description: overridden.description,
+    }
+  };
+}
 
 interface SearchPageProps {
   searchParams?: {

@@ -3,6 +3,7 @@ import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getCategoryBySlug, getCompanies, getSubcategories, getCountryByCode, getSubAreas } from '@/lib/database/queries';
+import { applySeoOverride } from '@/lib/seo/overrides';
 import { CategoryHeader } from '@/components/category-header';
 import { CompaniesGrid } from '@/components/companies-grid';
 import { AdvancedSearchFilters } from '@/components/advanced-search-filters';
@@ -69,20 +70,18 @@ export async function generateMetadata({
     const categoryUrl = `${baseUrl}/country/${params.country}/category/${params.category}`;
     const countryName = country?.name || params.country.toUpperCase();
 
+    const overridden = await applySeoOverride({
+      title: `افضل 10 ${category.name} في ${countryName} | مربعات`,
+      description: `اكتشف أفضل ${category.name} في ${countryName}. متخصصة مع تقييمات العملاء.`,
+    }, `/country/${params.country}/category/${params.category}`, 
+    { targetType: 'CATEGORY', targetId: category.id });
+
     return {
-      title: `${category.name} في ${countryName} | دليل الشركات`,
-      description: `اكتشف أفضل  ${category.name} في ${countryName}.  متخصصة مع تقييمات العملاء.`,
-      keywords: [
-        category.name,
-        ` ${category.name}`,
-        `${category.name} ${countryName}`,
-        'دليل الشركات',
-        'خدمات متخصصة'
-      ].join(', '),
+      ...overridden,
       
       openGraph: {
-        title: `${category.name} - دليل الشركات`,
-        description: ` متخصصة في ${category.name}`,
+       title: overridden.title,
+        description: overridden.description,
         url: categoryUrl,
         // images: category.image ? [category.image] : [], 
       },

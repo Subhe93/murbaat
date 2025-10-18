@@ -136,7 +136,7 @@ export const getCountryCities = cache(
         orderBy: [{ companies: { _count: "desc" } }, { name: "asc" }],
       });
 
-      return cities.map(city => ({
+      return cities.map((city) => ({
         ...city,
         companiesCount: city._count.companies,
       }));
@@ -432,10 +432,10 @@ export const generateCountryMetadata = async (countryCode: string) => {
     };
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://morabaat.com";
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://murabaat.com";
 
   return {
-    title: `${country.name} | دليل الشركات والخدمات`,
+    title: `${country.name} | دليل الشركات والخدمات | مربعات`,
     description: `اكتشف أفضل الشركات والخدمات في ${country.name}. ابحث عن الشركات حسب المدينة والفئة مع تقييمات العملاء. ${country.companiesCount} شركة متاحة.`,
     keywords: [
       `شركات ${country.name}`,

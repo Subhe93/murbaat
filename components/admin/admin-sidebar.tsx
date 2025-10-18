@@ -23,7 +23,8 @@ import {
   Upload,
   RefreshCw,
   TrendingUp,
-  Zap
+  Zap,
+  Search as SearchIcon
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
@@ -76,6 +77,16 @@ const getNavigation = (stats: DashboardStats) => [
       { name: 'جميع الصفحات', href: '/admin/ranking-pages', icon: Eye },
       { name: 'إضافة صفحة', href: '/admin/ranking-pages/new', icon: Plus },
       { name: 'توليد تلقائي', href: '/admin/ranking-pages/generate', icon: Zap },
+    ]
+  },
+  {
+    name: 'تحسينات SEO',
+    href: '/admin/seo',
+    icon: FileText,
+    current: false,
+    children: [
+      { name: 'إدارة العناوين والوصف', href: '/admin/seo', icon: Eye },
+      // { name: 'استكشاف الروابط', href: '/admin/seo/explore', icon: SearchIcon },
     ]
   },
   {

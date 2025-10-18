@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic";
 import { Metadata } from 'next';
+import { applySeoOverride } from '@/lib/seo/overrides'
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { CountryHeader } from '@/components/country-header';
@@ -28,7 +29,47 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: { params: { country: string } }): Promise<Metadata> {
-  return await generateCountryMetadata(params.country);
+  try {
+    // الحصول على بيانات البلد أولاً للحصول على ID
+    const countryData = await getCountryByCode(params.country)
+    
+    if (!countryData) {
+      return {
+        title: 'البلد غير موجود',
+        description: 'هذا البلد غير متوفر في دليل الشركات',
+      }
+    }
+
+    const base = await generateCountryMetadata(params.country)
+    const overridden = await applySeoOverride({
+      title: typeof base.title === 'string' ? base.title : undefined,
+      description: typeof base.description === 'string' ? base.description : undefined,
+    }, `/country/${params.country}`, { targetType: 'COUNTRY', targetId: countryData.id })
+    
+    return { ...base, title: overridden.title || base.title, description: overridden.description || base.description 
+      ,openGraph : {
+        title: overridden.title || base.title,
+        description: overridden.description || base.description,
+        images: base.openGraph?.images,
+        url: base.openGraph?.url,
+      },
+      twitter: {
+        card: "summary_large_image",
+          title: overridden.title || base.title,
+        description: overridden.description || base.description,
+       images: base.openGraph?.images,
+      },
+       alternates: {
+      canonical: base.alternates?.canonical ,
+    },
+    }
+  } catch (error) {
+    console.error('خطأ في generateMetadata للبلد:', error)
+    return {
+      title: 'خطأ في تحميل البلد',
+      description: 'حدث خطأ أثناء تحميل معلومات البلد',
+    }
+  }
 }
 
 interface CountryPageProps {

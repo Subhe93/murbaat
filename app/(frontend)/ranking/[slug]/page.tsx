@@ -5,6 +5,7 @@ import {
   incrementRankingPageViews,
 } from "@/lib/database/ranking-queries";
 import RankingPageContent from "./RankingPageContent";
+import { applySeoOverride } from "@/lib/seo/overrides";
 
 // توليد metadata ديناميكي للصفحة
 export async function generateMetadata({
@@ -20,9 +21,14 @@ export async function generateMetadata({
     };
   }
 
-  return {
+  const overridden = await applySeoOverride({
     title: rankingPage.metaTitle || rankingPage.title,
     description: rankingPage.metaDescription || rankingPage.description,
+  }, `/ranking/${params.slug}`, { targetType: 'RANKING_PAGE', targetId: rankingPage.id })
+
+  return {
+    title: overridden.title,
+    description: overridden.description,
     keywords: rankingPage.metaKeywords.join(", "),
     openGraph: {
       title: rankingPage.metaTitle || rankingPage.title,

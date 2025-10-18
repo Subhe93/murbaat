@@ -108,9 +108,13 @@ export async function getSubAreaBySlug(slug: string) {
   });
 }
 
-export async function getCityBySlug(slug: string) {
-  return await prisma.city.findUnique({
-    where: { slug },
+export async function getCityBySlug(slug: string, countryCode?: string) {
+  const whereClause = countryCode
+    ? { slug, countryCode, isActive: true }
+    : { slug, isActive: true };
+
+  return await prisma.city.findFirst({
+    where: whereClause,
     include: {
       country: true,
       companies: {
@@ -144,12 +148,16 @@ export async function getCategories() {
   });
 }
 
-export async function getCategoryBySlug(slug: string, country: string) {
+export async function getCategoryBySlug(slug: string, country?: string) {
+  const whereClause = country
+    ? { isActive: true, country: { code: country } }
+    : { isActive: true };
+
   return await prisma.category.findUnique({
     where: { slug },
     include: {
       companies: {
-        where: { isActive: true, country: { code: country } },
+        where: whereClause,
         include: {
           city: true,
           country: true,
@@ -992,4 +1000,30 @@ export async function updateDailyStats() {
       newUsers,
     },
   });
+}
+
+export async function getAllCountries() {
+  const countries = await prisma.country.findMany({
+    where: { isActive: true },
+    include: {
+      _count: {
+        select: {
+          companies: {
+            where: { isActive: true },
+          },
+        },
+      },
+    },
+    orderBy: { name: "asc" },
+  });
+
+  return countries.map((country) => ({
+    id: country.id,
+    code: country.code,
+    name: country.name,
+    flag: country.flag,
+    image: country.image,
+    description: country.description,
+    companiesCount: country._count.companies,
+  }));
 }

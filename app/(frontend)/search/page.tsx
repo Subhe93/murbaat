@@ -4,15 +4,24 @@ import { AdvancedSearchFilters } from '@/components/advanced-search-filters';
 import { CompaniesGrid } from '@/components/companies-grid';
 import { getCompanies } from '@/lib/database/queries';
 
-export const metadata: Metadata = {
-  title: 'البحث المتقدم | مربعات - دليل الشركات',
-  description: 'ابحث عن الشركات والخدمات باستخدام الفلاتر المتقدمة. ابحث حسب الموقع، الفئة، التقييم، والمزيد.',
-  keywords: 'البحث عن شركات, فلاتر البحث, دليل الشركات, البحث المتقدم',
-  openGraph: {
-    title: 'البحث المتقدم - مربعات',
-    description: 'ابحث عن الشركات والخدمات المناسبة باستخدام الفلاتر المتقدمة',
-  }
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { applySeoOverride } = await import('@/lib/seo/overrides');
+  
+  const overridden = await applySeoOverride({
+    title: 'البحث المتقدم | مربعات - دليل الشركات',
+    description: 'ابحث عن الشركات والخدمات باستخدام الفلاتر المتقدمة. ابحث حسب الموقع، الفئة، التقييم، والمزيد.'
+  }, '/search', { targetType: 'CUSTOM_PATH', targetId: '/search' });
+
+  return {
+    title: overridden.title,
+    description: overridden.description,
+    keywords: 'البحث عن شركات, فلاتر البحث, دليل الشركات, البحث المتقدم',
+    openGraph: {
+      title: overridden.title,
+      description: overridden.description,
+    }
+  };
+}
 
 interface SearchPageProps {
   searchParams?: {
@@ -65,7 +74,7 @@ async function SearchResults({ searchParams }: { searchParams: SearchPageProps['
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
             نتائج البحث
             {searchParams?.q && (
-              <span className="text-blue-600 dark:text-blue-400"> عن "{searchParams.q}"</span>
+              <span className="text-blue-600 dark:text-blue-400"> عن &quot;{searchParams.q}&quot;</span>
             )}
           </h2>
           <p className="text-gray-600 dark:text-gray-400">

@@ -32,6 +32,7 @@ import {
   BreadcrumbPage,
 } from '@/components/ui/breadcrumb';
 import { CompanyCategoriesBadges } from '@/components/company-categories-badges';
+import { applySeoOverride } from '@/lib/seo/overrides'
 
 // Transform database company to component-expected format
 function transformCompanyForComponents(company: CompanyWithRelations): Company {
@@ -82,11 +83,9 @@ export async function generateStaticParams() {
   }
 }
 
-export async function generateMetadata({ 
-  params 
-}: { 
-  params: { company: string } 
-}): Promise<Metadata> {
+export async function generateMetadata(
+  { params }: { params: { company: string } }
+): Promise<Metadata> {
   try {
     const decodedSlug = decodeURIComponent(params.company);
     const company = await getCompanyBySlug(decodedSlug);
@@ -99,12 +98,17 @@ export async function generateMetadata({
     }
 
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://murabaat.com';
-    const companyUrl = `${baseUrl}/country/${company.slug}`;
+    const companyUrl = `${baseUrl}/${company.slug}`;
+
+    const overridden = await applySeoOverride({
+      title: `${company.name} | مربعات`,
+      description: company.shortDescription || company.description || `${company.name} - شركة ${company.category.name} في ${company.city.name}، ${company.country.name}. تقييم ${company.rating}/5 من ${company.reviewsCount} مراجعة.`
+    }, `/${company.slug}`, { targetType: 'COMPANY', targetId: company.id })
 
     return {
-      title: `${company.name} | مربعات`,
+      title: overridden.title,
             // title: `${company.name} | ${company.category.name} في ${company.city.name}`,
-      description: company.shortDescription || company.description || `${company.name} - شركة ${company.category.name} في ${company.city.name}، ${company.country.name}. تقييم ${company.rating}/5 من ${company.reviewsCount} مراجعة.`,
+      description: overridden.description,
       keywords: [
         company.name,
         company.category.name,
@@ -294,7 +298,7 @@ export default async function CompanyPage({
         )}
 
         <div className="container mx-auto px-4 py-8">
-          <Breadcrumb className="mb-6">
+          <Breadcrumb className="mb-6 text-sm">
             <BreadcrumbList>
               <BreadcrumbItem>
                 <BreadcrumbLink asChild>
@@ -302,6 +306,12 @@ export default async function CompanyPage({
                 </BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator />
+              {/* <BreadcrumbItem>
+                <BreadcrumbLink asChild>
+                  <Link href="/services">جميع التصنيفات</Link>
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator /> */}
               <BreadcrumbItem>
                 <BreadcrumbLink asChild>
                   <Link href={`/country/${company.country.code}`}>{company.country.name}</Link>
@@ -313,6 +323,52 @@ export default async function CompanyPage({
                   <Link href={`/country/${company.country.code}/city/${company.city.slug}`}>{company.city.name}</Link>
                 </BreadcrumbLink>
               </BreadcrumbItem>
+         
+               {/* SubArea in breadcrumb */}
+              {company.subArea && (
+                <>
+                  <BreadcrumbSeparator />
+                  <BreadcrumbItem>
+                    <BreadcrumbLink asChild>
+                      <Link href={`/country/${company.country.code}/city/${company.city.slug}/sub-area/${company.subArea.slug}`}>
+                        {company.subArea.name}
+                      </Link>
+                    </BreadcrumbLink>
+                  </BreadcrumbItem>
+                </>
+              )}
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbLink asChild>
+                  <Link href={(() => {
+                    if (company.subArea) {
+                      return `/country/${company.country.code}/city/${company.city.slug}/sub-area/${company.subArea.slug}/category/${company.category.slug}`;
+                    } else {
+                      return `/country/${company.country.code}/city/${company.city.slug}/category/${company.category.slug}`;
+                    }
+                  })()}>{company.category.name}</Link>
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              {/* Subcategory in breadcrumb */}
+              {company.subCategory && (
+                <>
+                  <BreadcrumbSeparator />
+                  <BreadcrumbItem>
+                    <BreadcrumbLink asChild>
+                      <Link href={(() => {
+                        if (company.subArea) {
+                          return `/country/${company.country.code}/city/${company.city.slug}/sub-area/${company.subArea.slug}/category/${company.category.slug}/${company.subCategory.slug}`;
+                        } else {
+                          return `/country/${company.country.code}/city/${company.city.slug}/category/${company.category.slug}/${company.subCategory.slug}`;
+                        }
+                      })()}>
+                        {company.subCategory.name}
+                      </Link>
+                    </BreadcrumbLink>
+                  </BreadcrumbItem>
+                </>
+              )}
+             
               <BreadcrumbSeparator />
               <BreadcrumbItem>
                 <BreadcrumbPage>{company.name}</BreadcrumbPage>
@@ -320,16 +376,7 @@ export default async function CompanyPage({
             </BreadcrumbList>
           </Breadcrumb>
 
-          {/* Category, Subcategory, and SubArea Section */}
-          <div className="mb-6">
-            <CompanyCategoriesBadges
-              category={company.category}
-              subCategory={company.subCategory}
-              subArea={company.subArea}
-              countryCode={company.country.code}
-              citySlug={company.city.slug}
-            />
-          </div>
+     
 
           <CompanyHeader company={companyForComponents} />
           
@@ -353,7 +400,18 @@ export default async function CompanyPage({
               
               {/* Services Section */}
               <div className="border-b border-gray-200 dark:border-gray-700 pb-8">
+                     {/* Category, Subcategory, and SubArea Section */}
+          <div className="mb-6">
+            <CompanyCategoriesBadges
+              category={company.category}
+              subCategory={company.subCategory}
+              subArea={company.subArea}
+              countryCode={company.country.code}
+              citySlug={company.city.slug}
+            />
+          </div>
                 <CompanyInfo company={companyForComponents} />
+                
               </div>
               
               {/* Gallery Section */}

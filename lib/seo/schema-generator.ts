@@ -327,35 +327,91 @@ export function generateBreadcrumbSchema(
   company: CompanyWithRelations,
   baseUrl: string
 ) {
+  const breadcrumbItems = [
+    {
+      "@type": "ListItem",
+      position: 1,
+      item: baseUrl,
+      name: "الرئيسية",
+    },
+    {
+      "@type": "ListItem",
+      position: 2,
+      item: `${baseUrl}/services`,
+      name: "جميع التصنيفات",
+    },
+    {
+      "@type": "ListItem",
+      position: 3,
+      item: `${baseUrl}/country/${company.country.code}`,
+      name: company.country.name,
+    },
+    {
+      "@type": "ListItem",
+      position: 4,
+      item: `${baseUrl}/country/${company.country.code}/city/${company.city.slug}`,
+      name: company.city.name,
+    },
+  ];
+
+  // Add sub-area if exists
+  if (company.subArea) {
+    breadcrumbItems.push({
+      "@type": "ListItem",
+      position: 5,
+      item: `${baseUrl}/country/${company.country.code}/city/${company.city.slug}/sub-area/${company.subArea.slug}`,
+      name: company.subArea.name,
+    });
+  }
+
+  // Add category
+  const categoryPosition = company.subArea ? 6 : 5;
+  const categoryUrl = company.subArea
+    ? `${baseUrl}/country/${company.country.code}/city/${company.city.slug}/sub-area/${company.subArea.slug}/category/${company.category.slug}`
+    : `${baseUrl}/country/${company.country.code}/city/${company.city.slug}/category/${company.category.slug}`;
+
+  breadcrumbItems.push({
+    "@type": "ListItem",
+    position: categoryPosition,
+    item: categoryUrl,
+    name: company.category.name,
+  });
+
+  // Add subcategory if exists
+  if (company.subCategory) {
+    const subcategoryPosition = company.subArea ? 7 : 6;
+    const subcategoryUrl = company.subArea
+      ? `${baseUrl}/country/${company.country.code}/city/${company.city.slug}/sub-area/${company.subArea.slug}/category/${company.category.slug}/${company.subCategory.slug}`
+      : `${baseUrl}/country/${company.country.code}/city/${company.city.slug}/category/${company.category.slug}/${company.subCategory.slug}`;
+
+    breadcrumbItems.push({
+      "@type": "ListItem",
+      position: subcategoryPosition,
+      item: subcategoryUrl,
+      name: company.subCategory.name,
+    });
+  }
+
+  // Add company as final item
+  const companyPosition = company.subCategory
+    ? company.subArea
+      ? 8
+      : 7
+    : company.subArea
+    ? 7
+    : 6;
+
+  breadcrumbItems.push({
+    "@type": "ListItem",
+    position: companyPosition,
+    item: `${baseUrl}/${company.slug}`,
+    name: company.name,
+  });
+
   return {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
-    itemListElement: [
-      {
-        "@type": "ListItem",
-        position: 1,
-        item: baseUrl,
-        name: "الرئيسية",
-      },
-      {
-        "@type": "ListItem",
-        position: 2,
-        item: `${baseUrl}/country/${company.country.code}`,
-        name: company.country.name,
-      },
-      {
-        "@type": "ListItem",
-        position: 3,
-        item: `${baseUrl}/country/${company.country.code}/city/${company.city.slug}`,
-        name: company.city.name,
-      },
-      {
-        "@type": "ListItem",
-        position: 4,
-        item: `${baseUrl}/${company.slug}`,
-        name: company.name,
-      },
-    ],
+    itemListElement: breadcrumbItems,
   };
 }
 

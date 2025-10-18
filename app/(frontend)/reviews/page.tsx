@@ -1,10 +1,19 @@
 import { Metadata } from 'next';
 import { LatestReviews } from '@/components/latest-reviews';
 
-export const metadata: Metadata = {
-  title: 'آخر التقييمات | مربعات',
-  description: 'اطلع على آراء العملاء حول الشركات والخدمات في مربعات',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { applySeoOverride } = await import('@/lib/seo/overrides');
+  
+  const overridden = await applySeoOverride({
+    title: 'آخر التقييمات | مربعات',
+    description: 'اطلع على آراء العملاء حول الشركات والخدمات في مربعات'
+  }, '/reviews', { targetType: 'CUSTOM_PATH', targetId: '/reviews' });
+
+  return {
+    title: overridden.title,
+    description: overridden.description,
+  };
+}
 
 export default function ReviewsPage() {
   return (
@@ -18,7 +27,7 @@ export default function ReviewsPage() {
         </p>
       </div>
       
-      <LatestReviews />
+      <LatestReviews reviews={[]} />
     </div>
   );
 }

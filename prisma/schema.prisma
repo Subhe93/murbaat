@@ -414,6 +414,7 @@ model User {
   ownedCompanies CompanyOwner[]
   sessions    Session[]
   notifications Notification[]
+  seoOverrides SeoOverride[]
 
   @@index([email])
   @@index([role])
@@ -624,6 +625,30 @@ model RankingPage {
   @@map("ranking_pages")
 }
 
+// جدول تخصيصات SEO للروابط والكيانات
+model SeoOverride {
+  id              String         @id @default(cuid())
+
+  // تحديد الهدف إما بواسطة نوع وهدف معرف، أو عبر المسار الكامل
+  targetType      SeoTargetType?
+  targetId        String?
+  path            String?        @unique
+
+  // الحقول المعروضة في جوجل
+  title           String?        // meta title المخصص
+  metaDescription String? @db.Text // meta description المخصص
+  noindex         Boolean        @default(false)
+
+  // معلومات التعديل
+  updatedById     String?
+  updatedBy       User?          @relation(fields: [updatedById], references: [id], onDelete: SetNull)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([targetType, targetId])
+  @@map("seo_overrides")
+}
+
 // Enums
 enum NotificationType {
   REVIEW    // مراجعة جديدة
@@ -695,4 +720,16 @@ enum ReportStatus {
   PENDING
   RESOLVED
   DISMISSED
+}
+
+// أنواع الصفحات/الكيانات التي يمكن تخصيصها
+enum SeoTargetType {
+  COMPANY
+  CATEGORY
+  SUBCATEGORY
+  COUNTRY
+  CITY
+  SUBAREA
+  RANKING_PAGE
+  CUSTOM_PATH
 }

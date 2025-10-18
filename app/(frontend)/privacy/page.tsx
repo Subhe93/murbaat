@@ -1,9 +1,18 @@
 import { Metadata } from 'next';
 
-export const metadata: Metadata = {
-  title: 'سياسة الخصوصية | مربعات',
-  description: 'سياسة الخصوصية وحماية البيانات الشخصية في موقع مربعات - دليل الشركات والخدمات',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { applySeoOverride } = await import('@/lib/seo/overrides');
+  
+  const overridden = await applySeoOverride({
+    title: 'سياسة الخصوصية | مربعات',
+    description: 'سياسة الخصوصية وحماية البيانات الشخصية في موقع مربعات - دليل الشركات والخدمات'
+  }, '/privacy', { targetType: 'CUSTOM_PATH', targetId: '/privacy' });
+
+  return {
+    title: overridden.title,
+    description: overridden.description,
+  };
+}
 
 export default function PrivacyPolicy() {
   return (

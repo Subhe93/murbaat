@@ -159,6 +159,9 @@ export function Navbar() {
               <Link href="/" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
                 الرئيسية
               </Link>
+              <Link href="/services" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+               التصنيفات
+              </Link>
               <Link href="/search" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
                 البحث المتقدم
               </Link>
@@ -173,6 +176,14 @@ export function Navbar() {
                 {/* Mega Menu للتصنيفات */}
                 <div className="absolute top-full right-0 mt-2 w-[600px] bg-white dark:bg-gray-800 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                   <div className="p-4 max-h-[500px] overflow-y-auto">
+                    <div className="mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">
+                      <Link 
+                        href="/services"
+                        className="text-lg font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+                      >
+                        جميع التصنيفات
+                      </Link>
+                    </div>
                     {categories.length === 0 ? (
                       <div className="text-center text-gray-500 py-4">جاري التحميل...</div>
                     ) : (
@@ -181,7 +192,7 @@ export function Navbar() {
                           <div key={category.id} className="border-b border-gray-100 dark:border-gray-700 pb-2">
                             <div className="flex items-center justify-between">
                               <Link 
-                                href={`/country/sy/category/${category.slug}`}
+                                href={`/category/${category.slug}`}
                                 className="font-semibold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex-1"
                               >
                                 {category.name}
@@ -214,7 +225,7 @@ export function Navbar() {
                                   {category.subCategories.slice(0, 5).map((subCat) => (
                                     <li key={subCat.id}>
                                       <Link 
-                                        href={`/country/sy/category/${category.slug}/${subCat.slug}`}
+                                        href={`/category/${category.slug}/${subCat.slug}`}
                                         className="text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors block py-1"
                                       >
                                         • {subCat.name}
@@ -224,7 +235,7 @@ export function Navbar() {
                                   {category.subCategories.length > 5 && (
                                     <li>
                                       <Link 
-                                        href={`/country/sy/category/${category.slug}`}
+                                        href={`/category/${category.slug}`}
                                         className="text-sm text-blue-600 dark:text-blue-400 hover:underline py-1 block"
                                       >
                                         +{category.subCategories.length - 5} المزيد
@@ -443,6 +454,13 @@ export function Navbar() {
                   الرئيسية
                 </Link>
                 <Link 
+                  href="/services" 
+                  className="block text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  جميع التصنيفات
+                </Link>
+                <Link 
                   href="/search" 
                   className="block text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
                   onClick={() => setIsMenuOpen(false)}
@@ -453,13 +471,20 @@ export function Navbar() {
                 {/* قائمة التصنيفات للموبايل */}
                 <div className="space-y-2">
                   <div className="font-semibold text-gray-900 dark:text-white">التصنيفات</div>
+                  <Link 
+                    href="/services"
+                    className="block text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium pr-4"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    جميع التصنيفات
+                  </Link>
                   {categories.length === 0 ? (
                     <div className="text-sm text-gray-500 pr-4">جاري التحميل...</div>
                   ) : (
                     categories.map((category) => (
                       <div key={category.id} className="pr-4">
                         <Link 
-                          href={`/country/sy/category/${category.slug}`}
+                          href={`/category/${category.slug}`}
                           className="block text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium"
                           onClick={() => setIsMenuOpen(false)}
                         >
@@ -470,7 +495,7 @@ export function Navbar() {
                             {category.subCategories.map((subCat) => (
                               <Link 
                                 key={subCat.id}
-                                href={`/country/sy/category/${category.slug}/sub-category/${subCat.slug}`}
+                                href={`/category/${category.slug}/${subCat.slug}`}
                                 className="block text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
                                 onClick={() => setIsMenuOpen(false)}
                               >
