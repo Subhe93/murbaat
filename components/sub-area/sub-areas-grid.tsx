@@ -41,6 +41,9 @@ export function SubAreasGrid({ subAreas, cityName, countryCode, citySlug }: SubA
   // فلترة وترتيب المناطق الفرعية
   const filteredSubAreas = subAreas
     .filter(subArea => {
+      // عرض المناطق الفرعية الخاصة بالمدينة الحالية فقط (مطابقة citySlug)
+      if (citySlug && subArea.city?.slug !== citySlug) return false
+
       const matchesSearch = subArea.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            subArea.description?.toLowerCase().includes(searchTerm.toLowerCase())
       return matchesSearch
