@@ -375,7 +375,7 @@ export async function getLiveSeoForSubAreaSubcategory(
     const cityName = subArea.city?.name || "";
     const subAreaName = subArea.name;
 
-    const defaultTitle = `افضل 10 ${subcategory.name} في ${subAreaName}, ${cityName}, ${countryName} | ${subcategory.category.name}`;
+    const defaultTitle = `أفضل 10 ${subcategory.name} في ${subAreaName}, ${cityName}, ${countryName} | ${subcategory.category.name}`;
     const defaultDescription = `اكتشف أفضل شركات ${subcategory.name} في ${subAreaName}, ${cityName}, ${countryName}.`;
 
     const overridden = await applySeoOverride(

@@ -77,7 +77,7 @@ export async function generateMetadata({
     const cityName = city?.name || params.city;
 
     const overridden = await applySeoOverride({
-      title: `افضل 10 ${category.name} في ${cityName}, ${countryName} |  مربعات`,
+      title: `أفضل 10 ${category.name} في ${cityName}, ${countryName} |  مربعات`,
       description: `اكتشف أفضل شركات ${category.name} في ${cityName}, ${countryName}. شركات متخصصة مع تقييمات العملاء.`,
     }, `/country/${params.country}/city/${params.city}/category/${params.category}`, { targetType: 'CATEGORY', targetId: category.id })
 

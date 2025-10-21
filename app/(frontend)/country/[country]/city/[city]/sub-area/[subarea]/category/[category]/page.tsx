@@ -83,7 +83,7 @@ export async function generateMetadata({
     const subAreaName = subArea?.name || params.subarea;
 
     const overridden = await applySeoOverride({
-      title: `افضل 10 ${category.name} في ${subAreaName}, ${cityName}, ${countryName} | مربعات`,
+      title: `أفضل 10 ${category.name} في ${subAreaName}, ${cityName}, ${countryName} | مربعات`,
       description: `اكتشف أفضل ${category.name} في ${subAreaName}, ${cityName}, ${countryName}. شركات متخصصة مع تقييمات العملاء.`,
     }, `/country/${params.country}/city/${params.city}/sub-area/${params.subarea}/category/${params.category}`, { targetType: 'CATEGORY', targetId: category.id })
 

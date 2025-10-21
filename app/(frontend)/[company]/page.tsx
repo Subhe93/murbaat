@@ -272,12 +272,12 @@ export default async function CompanyPage({
         />
 
         {/* JSON-LD Schema للمنظمة */}
-        <script
+        {/* <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify(organizationSchema),
           }}
-        />
+        /> */}
 
         {/* JSON-LD Schema للموقع */}
         <script

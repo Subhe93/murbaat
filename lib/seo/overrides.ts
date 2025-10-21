@@ -48,7 +48,7 @@ export async function applySeoOverride(
       // ignore very short tokens
       if (t.length <= 1) return;
       // ignore some common stop words in Arabic/English
-      const stop = /^(في|من|مع|و|او|أو|ال|أفضل|افضل|دليل|شركات|اكتشف|أفضل|مربعات|فيها?)$/i;
+      const stop = /^(في|من|مع|و|او|أو|ال|أفضل|أفضل|دليل|شركات|اكتشف|أفضل|مربعات|فيها?)$/i;
       if (stop.test(t)) return;
       set.add(t);
     };

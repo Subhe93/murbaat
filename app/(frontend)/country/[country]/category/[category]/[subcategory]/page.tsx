@@ -45,7 +45,7 @@ export async function generateMetadata({
     const countryName = country?.name || params.country.toUpperCase();
 
     const overridden = await applySeoOverride({
-      title: `افضل 10 ${subcategory.name} في ${countryName} | ${subcategory.category.name} | مربعات`,
+      title: `أفضل 10 ${subcategory.name} في ${countryName} | ${subcategory.category.name} | مربعات`,
       description: `اكتشف أفضل ${subcategory.name} في ${countryName}.`,
     }, `/country/${params.country}/category/${params.category}/${params.subcategory}`, 
     { targetType: 'SUBCATEGORY', targetId: subcategory.id });

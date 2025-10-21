@@ -289,7 +289,7 @@ export async function GET(request: NextRequest) {
 
         for (const cat of categories) {
           const path = `/country/${countryRow.code}/category/${cat.slug}`;
-          const defaultTitle = `افضل 10 ${cat.name} في ${countryRow.name} | مربعات`;
+          const defaultTitle = `أفضل 10 ${cat.name} في ${countryRow.name} | مربعات`;
           const defaultDescription = `اكتشف أفضل شركات ${cat.name} في ${countryRow.name}`;
           const override = await checkOverride(
             path,
@@ -319,7 +319,7 @@ export async function GET(request: NextRequest) {
 
           for (const subcat of subcategories) {
             const path = `/country/${countryRow.code}/category/${cat.slug}/${subcat.slug}`;
-            const defaultTitle = `افضل 10 ${subcat.name} في ${countryRow.name} | ${cat.name} | مربعات`;
+            const defaultTitle = `أفضل 10 ${subcat.name} في ${countryRow.name} | ${cat.name} | مربعات`;
             const defaultDescription = `اكتشف أفضل شركات ${subcat.name} في ${countryRow.name}`;
             const override = await checkOverride(
               path,
@@ -380,7 +380,7 @@ export async function GET(request: NextRequest) {
 
         for (const cat of categories) {
           const path = `/country/${countryRow.code}/city/${cityRow.slug}/category/${cat.slug}`;
-          const defaultTitle = `افضل 10 ${cat.name} في ${cityRow.name}, ${countryRow.name} |  مربعات`;
+          const defaultTitle = `أفضل 10 ${cat.name} في ${cityRow.name}, ${countryRow.name} |  مربعات`;
           const defaultDescription = `اكتشف أفضل شركات ${cat.name} في ${cityRow.name}, ${countryRow.name}`;
           const override = await checkOverride(
             path,
@@ -410,7 +410,7 @@ export async function GET(request: NextRequest) {
 
           for (const subcat of subcategories) {
             const path = `/country/${countryRow.code}/city/${cityRow.slug}/category/${cat.slug}/${subcat.slug}`;
-            const defaultTitle = `افضل 10 ${subcat.name} في ${cityRow.name}, ${countryRow.name} | ${cat.name} | مربعات`;
+            const defaultTitle = `أفضل 10 ${subcat.name} في ${cityRow.name}, ${countryRow.name} | ${cat.name} | مربعات`;
             const defaultDescription = `اكتشف أفضل شركات ${subcat.name} في ${cityRow.name}, ${countryRow.name}`;
             const override = await checkOverride(
               path,
@@ -463,7 +463,7 @@ export async function GET(request: NextRequest) {
           // SubArea + Category combinations
           for (const cat of categories) {
             const path = `/country/${countryRow.code}/city/${cityRow.slug}/sub-area/${subAreaRow.slug}/category/${cat.slug}`;
-            const defaultTitle = `افضل 10 ${cat.name} في ${subAreaRow.name}, ${cityRow.name}, ${countryRow.name} | مربعات`;
+            const defaultTitle = `أفضل 10 ${cat.name} في ${subAreaRow.name}, ${cityRow.name}, ${countryRow.name} | مربعات`;
             const defaultDescription = `اكتشف أفضل شركات ${cat.name} في ${subAreaRow.name}, ${cityRow.name}, ${countryRow.name}`;
             const override = await checkOverride(
               path,
@@ -493,7 +493,7 @@ export async function GET(request: NextRequest) {
 
             for (const subcat of subcategories) {
               const path = `/country/${countryRow.code}/city/${cityRow.slug}/sub-area/${subAreaRow.slug}/category/${cat.slug}/${subcat.slug}`;
-              const defaultTitle = `افضل 10 ${subcat.name} في ${subAreaRow.name}, ${cityRow.name}, ${countryRow.name} | ${cat.name} | مربعات`;
+              const defaultTitle = `أفضل 10 ${subcat.name} في ${subAreaRow.name}, ${cityRow.name}, ${countryRow.name} | ${cat.name} | مربعات`;
               const defaultDescription = `اكتشف أفضل شركات ${subcat.name} في ${subAreaRow.name}, ${cityRow.name}, ${countryRow.name}`;
               const override = await checkOverride(
                 path,
