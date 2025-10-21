@@ -288,14 +288,14 @@ export default async function CompanyPage({
         />
 
         {/* JSON-LD Schema للشركات المشابهة */}
-        {similarCompaniesSchema && (
+        {/* {similarCompaniesSchema && (
           <script
             type="application/ld+json"
             dangerouslySetInnerHTML={{
               __html: JSON.stringify(similarCompaniesSchema),
             }}
           />
-        )}
+        )} */}
 
         <div className="container mx-auto px-4 py-8">
           <Breadcrumb className="mb-6 text-sm">
