@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
-import { z } from 'zod';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { z } from "zod";
 
 const updateSubAreaSchema = z.object({
   name: z.string().min(1).optional(),
@@ -10,6 +10,8 @@ const updateSubAreaSchema = z.object({
   description: z.string().optional(),
   image: z.string().optional(),
   isActive: z.boolean().optional(),
+  cityId: z.string().min(1).optional(),
+  countryId: z.string().min(1).optional(),
 });
 
 // GET - جلب منطقة فرعية محددة
@@ -19,9 +21,15 @@ export async function GET(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    
-    if (!session?.user || (session.user.role !== 'SUPER_ADMIN' && session.user.role !== 'ADMIN')) {
-      return NextResponse.json({ error: 'غير مصرح لك بالوصول' }, { status: 401 });
+
+    if (
+      !session?.user ||
+      (session.user.role !== "SUPER_ADMIN" && session.user.role !== "ADMIN")
+    ) {
+      return NextResponse.json(
+        { error: "غير مصرح لك بالوصول" },
+        { status: 401 }
+      );
     }
     const subArea = await prisma.subArea.findUnique({
       where: { id: params.id },
@@ -38,16 +46,16 @@ export async function GET(
 
     if (!subArea) {
       return NextResponse.json(
-        { error: 'المنطقة الفرعية غير موجودة' },
+        { error: "المنطقة الفرعية غير موجودة" },
         { status: 404 }
       );
     }
 
     return NextResponse.json(subArea);
   } catch (error) {
-    console.error('خطأ في جلب المنطقة الفرعية:', error);
+    console.error("خطأ في جلب المنطقة الفرعية:", error);
     return NextResponse.json(
-      { error: 'خطأ في جلب المنطقة الفرعية' },
+      { error: "خطأ في جلب المنطقة الفرعية" },
       { status: 500 }
     );
   }
@@ -60,9 +68,15 @@ export async function PUT(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    
-    if (!session?.user || (session.user.role !== 'SUPER_ADMIN' && session.user.role !== 'ADMIN')) {
-      return NextResponse.json({ error: 'غير مصرح لك بالوصول' }, { status: 401 });
+
+    if (
+      !session?.user ||
+      (session.user.role !== "SUPER_ADMIN" && session.user.role !== "ADMIN")
+    ) {
+      return NextResponse.json(
+        { error: "غير مصرح لك بالوصول" },
+        { status: 401 }
+      );
     }
     const body = await request.json();
     const validatedData = updateSubAreaSchema.parse(body);
@@ -74,17 +88,50 @@ export async function PUT(
 
     if (!existingSubArea) {
       return NextResponse.json(
-        { error: 'المنطقة الفرعية غير موجودة' },
+        { error: "المنطقة الفرعية غير موجودة" },
         { status: 404 }
       );
     }
 
-    // التحقق من عدم وجود اسم مكرر إذا تم تغيير الاسم
-    if (validatedData.name && validatedData.name !== existingSubArea.name) {
+    // تحديد معرف المدينة والبلد المستخدمة (الجديدة إذا تم التحديث أو القديمة)
+    const cityIdToUse = validatedData.cityId || existingSubArea.cityId;
+    let countryIdToUse = existingSubArea.countryId;
+    let cityCodeToUse = existingSubArea.cityCode;
+    let countryCodeToUse = existingSubArea.countryCode;
+
+    // إذا تم تغيير المدينة، التحقق من وجودها والحصول على معلومات البلد
+    if (
+      validatedData.cityId &&
+      validatedData.cityId !== existingSubArea.cityId
+    ) {
+      const city = await prisma.city.findUnique({
+        where: { id: validatedData.cityId },
+        include: { country: true },
+      });
+
+      if (!city) {
+        return NextResponse.json(
+          { error: "المدينة غير موجودة" },
+          { status: 404 }
+        );
+      }
+
+      countryIdToUse = city.countryId;
+      cityCodeToUse = city.slug;
+      countryCodeToUse = city.country.code;
+    }
+
+    // التحقق من عدم وجود اسم مكرر إذا تم تغيير الاسم أو المدينة
+    const nameChanged =
+      validatedData.name && validatedData.name !== existingSubArea.name;
+    const cityChanged =
+      validatedData.cityId && validatedData.cityId !== existingSubArea.cityId;
+
+    if (nameChanged || cityChanged) {
       const duplicateName = await prisma.subArea.findFirst({
         where: {
-          name: validatedData.name,
-          cityId: existingSubArea.cityId,
+          name: validatedData.name || existingSubArea.name,
+          cityId: cityIdToUse,
           id: { not: params.id },
           isActive: true,
         },
@@ -92,7 +139,7 @@ export async function PUT(
 
       if (duplicateName) {
         return NextResponse.json(
-          { error: 'يوجد منطقة فرعية بنفس الاسم في هذه المدينة' },
+          { error: "يوجد منطقة فرعية بنفس الاسم في هذه المدينة" },
           { status: 400 }
         );
       }
@@ -106,15 +153,26 @@ export async function PUT(
 
       if (duplicateSlug) {
         return NextResponse.json(
-          { error: 'معرف المنطقة الفرعية مستخدم بالفعل' },
+          { error: "معرف المنطقة الفرعية مستخدم بالفعل" },
           { status: 400 }
         );
       }
     }
 
+    // إعداد البيانات للتحديث
+    const updateData: any = { ...validatedData };
+
+    // تحديث معلومات المدينة والبلد إذا تم تغييرها
+    if (validatedData.cityId) {
+      updateData.cityId = cityIdToUse;
+      updateData.countryId = countryIdToUse;
+      updateData.cityCode = cityCodeToUse;
+      updateData.countryCode = countryCodeToUse;
+    }
+
     const updatedSubArea = await prisma.subArea.update({
       where: { id: params.id },
-      data: validatedData,
+      data: updateData,
       include: {
         city: true,
         country: true,
@@ -130,14 +188,14 @@ export async function PUT(
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'بيانات غير صحيحة', details: error.errors },
+        { error: "بيانات غير صحيحة", details: error.issues },
         { status: 400 }
       );
     }
 
-    console.error('خطأ في تحديث المنطقة الفرعية:', error);
+    console.error("خطأ في تحديث المنطقة الفرعية:", error);
     return NextResponse.json(
-      { error: 'خطأ في تحديث المنطقة الفرعية' },
+      { error: "خطأ في تحديث المنطقة الفرعية" },
       { status: 500 }
     );
   }
@@ -150,9 +208,15 @@ export async function DELETE(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    
-    if (!session?.user || (session.user.role !== 'SUPER_ADMIN' && session.user.role !== 'ADMIN')) {
-      return NextResponse.json({ error: 'غير مصرح لك بالوصول' }, { status: 401 });
+
+    if (
+      !session?.user ||
+      (session.user.role !== "SUPER_ADMIN" && session.user.role !== "ADMIN")
+    ) {
+      return NextResponse.json(
+        { error: "غير مصرح لك بالوصول" },
+        { status: 401 }
+      );
     }
     // التحقق من وجود المنطقة الفرعية
     const existingSubArea = await prisma.subArea.findUnique({
@@ -168,7 +232,7 @@ export async function DELETE(
 
     if (!existingSubArea) {
       return NextResponse.json(
-        { error: 'المنطقة الفرعية غير موجودة' },
+        { error: "المنطقة الفرعية غير موجودة" },
         { status: 404 }
       );
     }
@@ -176,7 +240,7 @@ export async function DELETE(
     // التحقق من وجود شركات مرتبطة بالمنطقة الفرعية
     if (existingSubArea._count.companies > 0) {
       return NextResponse.json(
-        { error: 'لا يمكن حذف المنطقة الفرعية لوجود شركات مرتبطة بها' },
+        { error: "لا يمكن حذف المنطقة الفرعية لوجود شركات مرتبطة بها" },
         { status: 400 }
       );
     }
@@ -187,11 +251,11 @@ export async function DELETE(
       data: { isActive: false },
     });
 
-    return NextResponse.json({ message: 'تم حذف المنطقة الفرعية بنجاح' });
+    return NextResponse.json({ message: "تم حذف المنطقة الفرعية بنجاح" });
   } catch (error) {
-    console.error('خطأ في حذف المنطقة الفرعية:', error);
+    console.error("خطأ في حذف المنطقة الفرعية:", error);
     return NextResponse.json(
-      { error: 'خطأ في حذف المنطقة الفرعية' },
+      { error: "خطأ في حذف المنطقة الفرعية" },
       { status: 500 }
     );
   }
