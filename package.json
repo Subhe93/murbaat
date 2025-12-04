@@ -15,7 +15,8 @@
     "db:reset": "prisma db push --force-reset && npm run db:seed",
     "db:stats": "tsx scripts/update-stats.ts",
     "db:backup": "tsx scripts/backup-data.ts",
-    "db:notifications": "tsx scripts/create-sample-notifications.ts"
+    "db:notifications": "tsx scripts/create-sample-notifications.ts",
+    "db:test": "tsx scripts/test-db-connection.ts"
   },
   "prisma": {
     "seed": "node lib/database/seed.js"
