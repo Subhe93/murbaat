@@ -9,9 +9,9 @@ const CreateReviewSchema = z.object({
   userName: z.string().min(2, 'الاسم يجب أن يكون حرفين على الأقل'),
   userEmail: z.string().email('البريد الإلكتروني غير صحيح').optional().or(z.literal('')),
   rating: z.number().int().min(1, 'التقييم يجب أن يكون من 1 إلى 5').max(5, 'التقييم يجب أن يكون من 1 إلى 5'),
-  title: z.string().min(5, 'العنوان يجب أن يكون 5 أحرف على الأقل'),
+  title: z.string().optional(), // جعل العنوان اختياري
   comment: z.string().min(10, 'التعليق يجب أن يكون 10 أحرف على الأقل').max(1000, 'التعليق لا يجب أن يتجاوز 1000 حرف'),
-  images: z.array(z.string().url()).max(3, 'يمكن إضافة 3 صور كحد أقصى').optional(),
+  images: z.array(z.string()).max(3, 'يمكن إضافة 3 صور كحد أقصى').optional(), // تعديل للسماح بروابط محلية
 });
 
 // GET /api/reviews - Get reviews for a company
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
       userName: validatedData.userName,
       userEmail: validatedData.userEmail || null,
       rating: validatedData.rating,
-      title: validatedData.title,
+      title: validatedData.title || '', // العنوان اختياري - قيمة افتراضية فارغة
       comment: validatedData.comment,
       isApproved: false, // Reviews need approval by default
       helpfulCount: 0,

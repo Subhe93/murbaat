@@ -1,10 +1,11 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { Star, MapPin, Phone, Globe, Mail, Clock, Users, CheckCircle, Facebook, Twitter, Instagram, Linkedin, Share2, Navigation } from 'lucide-react';
+import { Star, MapPin, Phone, Globe, Mail, Clock, Users, CheckCircle, Facebook, Twitter, Instagram, Linkedin, Share2, Navigation, QrCode } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Company } from '@/lib/data';
 import { ShareButton } from './share-button';
+import { QRButton } from './qr-button';
 
 interface CompanyHeaderProps {
   company: Company;
@@ -170,6 +171,8 @@ export function CompanyHeader({ company }: CompanyHeaderProps) {
                 )}
                 
                 <ShareButton companyName={company.name} companyDescription={company.description} />
+                
+                <QRButton companyName={company.name} companySlug={company.slug} />
               </div>
             </div>
           </div>
@@ -335,6 +338,11 @@ export function CompanyHeader({ company }: CompanyHeaderProps) {
                 </a>
               </Button>
             )}
+          </div>
+          
+          {/* QR Code Button - Mobile */}
+          <div className="mt-3">
+            <QRButton companyName={company.name} companySlug={company.slug} variant="mobile" />
           </div>
         </div>
       </div>

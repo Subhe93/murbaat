@@ -1,10 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Star, User, MessageSquare, Camera, Send, X } from 'lucide-react';
+import { Star, User, MessageSquare, Camera, Send, X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 interface AddReviewFormProps {
   companyName: string;
@@ -13,7 +11,6 @@ interface AddReviewFormProps {
     userName: string;
     userEmail?: string;
     rating: number;
-    title: string;
     comment: string;
     images?: string[];
   }) => void;
@@ -22,12 +19,13 @@ interface AddReviewFormProps {
 export function AddReviewForm({ companyName, onClose, onSubmit }: AddReviewFormProps) {
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
-  const [title, setTitle] = useState('');
   const [comment, setComment] = useState('');
   const [userName, setUserName] = useState('');
   const [userEmail, setUserEmail] = useState('');
   const [photos, setPhotos] = useState<string[]>([]);
+  const [photoFiles, setPhotoFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const isValidEmail = (value: string) =>
@@ -38,8 +36,6 @@ export function AddReviewForm({ companyName, onClose, onSubmit }: AddReviewFormP
     if (!rating || rating < 1 || rating > 5) newErrors.rating = 'يرجى اختيار تقييم بين 1 و 5';
     if (!userName.trim()) newErrors.userName = 'الاسم مطلوب';
     else if (userName.trim().length < 2) newErrors.userName = 'الاسم يجب أن يكون حرفين على الأقل';
-    if (!title.trim()) newErrors.title = 'عنوان التقييم مطلوب';
-    else if (title.trim().length < 5) newErrors.title = 'العنوان يجب أن يكون 5 أحرف على الأقل';
     if (!comment.trim()) newErrors.comment = 'تفاصيل التقييم مطلوبة';
     else if (comment.trim().length < 10) newErrors.comment = 'التفاصيل يجب أن تكون 10 أحرف على الأقل';
     else if (comment.trim().length > 500) newErrors.comment = 'التفاصيل يجب ألا تتجاوز 500 حرف';
@@ -48,40 +44,84 @@ export function AddReviewForm({ companyName, onClose, onSubmit }: AddReviewFormP
     return Object.keys(newErrors).length === 0;
   };
 
+  // رفع الصور للسيرفر
+  const uploadImages = async (): Promise<string[]> => {
+    if (photoFiles.length === 0) return [];
+    
+    const uploadedUrls: string[] = [];
+    
+    for (const file of photoFiles) {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      try {
+        const response = await fetch('/api/upload/review-image', {
+          method: 'POST',
+          body: formData,
+        });
+        
+        const result = await response.json();
+        
+        if (result.success && result.url) {
+          uploadedUrls.push(result.url);
+        }
+      } catch (error) {
+        console.error('خطأ في رفع الصورة:', error);
+      }
+    }
+    
+    return uploadedUrls;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
 
     setIsSubmitting(true);
     
-    // محاكاة إرسال التقييم
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    const newReviewData = {
-      userName,
-      userEmail: userEmail || undefined,
-      rating,
-      title,
-      comment,
-      images: photos.length > 0 ? photos : undefined,
-    };
+    try {
+      // رفع الصور أولاً
+      let uploadedImageUrls: string[] = [];
+      if (photoFiles.length > 0) {
+        setIsUploading(true);
+        uploadedImageUrls = await uploadImages();
+        setIsUploading(false);
+      }
+      
+      const newReviewData = {
+        userName,
+        userEmail: userEmail || undefined,
+        rating,
+        comment,
+        images: uploadedImageUrls.length > 0 ? uploadedImageUrls : undefined,
+      };
 
-    onSubmit(newReviewData);
-    setIsSubmitting(false);
-    onClose();
+      onSubmit(newReviewData);
+    } catch (error) {
+      console.error('خطأ في إرسال التقييم:', error);
+    } finally {
+      setIsSubmitting(false);
+      onClose();
+    }
   };
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files) {
-      // محاكاة رفع الصور
-      const newPhotos = Array.from(files).map(file => URL.createObjectURL(file));
-      setPhotos([...photos, ...newPhotos.slice(0, 3 - photos.length)]);
+      const newFiles = Array.from(files).slice(0, 3 - photoFiles.length);
+      const newPhotoPreviews = newFiles.map(file => URL.createObjectURL(file));
+      
+      setPhotoFiles([...photoFiles, ...newFiles]);
+      setPhotos([...photos, ...newPhotoPreviews]);
     }
   };
 
   const removePhoto = (index: number) => {
+    // تنظيف URL المؤقت
+    URL.revokeObjectURL(photos[index]);
+    
     setPhotos(photos.filter((_, i) => i !== index));
+    setPhotoFiles(photoFiles.filter((_, i) => i !== index));
   };
 
   const getRatingText = (rating: number) => {
@@ -199,27 +239,6 @@ export function AddReviewForm({ companyName, onClose, onSubmit }: AddReviewFormP
             </div>
           </div>
 
-          {/* Review Title */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-900 dark:text-white mb-2">
-              عنوان التقييم *
-            </label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className={`w-full px-4 py-3 border rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 ${errors.title ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 dark:border-gray-600 focus:ring-blue-500'}`}
-              placeholder="مثال: خدمة ممتازة وفريق محترف"
-              required
-            />
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              خلاصة قصيرة لتجربتك (5 أحرف على الأقل).
-            </p>
-            {errors.title && (
-              <p className="text-sm text-red-600 mt-1">{errors.title}</p>
-            )}
-          </div>
-
           {/* Review Comment */}
           <div>
             <label className="block text-sm font-semibold text-gray-900 dark:text-white mb-2">
@@ -321,7 +340,6 @@ export function AddReviewForm({ companyName, onClose, onSubmit }: AddReviewFormP
                 isSubmitting ||
                 !rating || rating < 1 || rating > 5 ||
                 !userName.trim() || userName.trim().length < 2 ||
-                !title.trim() || title.trim().length < 5 ||
                 !comment.trim() || comment.trim().length < 10 || comment.trim().length > 500 ||
                 (!!userEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i.test(userEmail.trim()))
               }
@@ -329,8 +347,8 @@ export function AddReviewForm({ companyName, onClose, onSubmit }: AddReviewFormP
             >
               {isSubmitting ? (
                 <div className="flex items-center">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  جاري الإرسال...
+                  <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+                  {isUploading ? 'جاري رفع الصور...' : 'جاري الإرسال...'}
                 </div>
               ) : (
                 <div className="flex items-center">

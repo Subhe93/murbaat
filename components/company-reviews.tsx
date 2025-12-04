@@ -398,10 +398,6 @@ export function CompanyReviews({ companyId, companyName, overallRating, totalRev
                   })}
                 </div>
 
-                <h5 className="font-semibold text-gray-900 dark:text-white mb-2">
-                  {review.title}
-                </h5>
-
                 <p className="text-gray-600 dark:text-gray-400 mb-4 leading-relaxed">
                   {review.comment}
                 </p>
