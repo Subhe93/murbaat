@@ -100,8 +100,20 @@ export async function generateMetadata(
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://murabaat.com';
     const companyUrl = `${baseUrl}/${company.slug}`;
 
+    const titleParts = [
+      company.name,
+      company.country.name,
+      company.city.name
+    ];
+    
+    if (company.subArea) {
+      titleParts.push(company.subArea.name);
+    }
+    
+    const title = `${titleParts.join('، ')} | مربعات`;
+    
     const overridden = await applySeoOverride({
-      title: `${company.name} | مربعات`,
+      title: title,
       description: company.shortDescription || company.description || `${company.name} - شركة ${company.category.name} في ${company.city.name}، ${company.country.name}. تقييم ${company.rating}/5 من ${company.reviewsCount} مراجعة.`
     }, `/${company.slug}`, { targetType: 'COMPANY', targetId: company.id })
 

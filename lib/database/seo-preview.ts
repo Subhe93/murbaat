@@ -30,12 +30,23 @@ export async function getLiveSeoForTarget(
             country: true,
             city: true,
             category: true,
+            subArea: true,
           },
         });
         if (!company) return null;
 
         // نفس المنطق المستخدم في app/(frontend)/[company]/page.tsx
-        const defaultTitle = `${company.name} | مربعات`;
+        const titleParts = [
+          company.name,
+          company.country.name,
+          company.city.name,
+        ];
+
+        if (company.subArea) {
+          titleParts.push(company.subArea.name);
+        }
+
+        const defaultTitle = `${titleParts.join("، ")} | مربعات`;
         const defaultDescription =
           company.shortDescription ||
           company.description ||
