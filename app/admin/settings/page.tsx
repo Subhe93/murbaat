@@ -15,7 +15,8 @@ import {
   FileText,
   MapPin,
   Tag,
-  ArrowRight
+  ArrowRight,
+  Link2
 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -304,6 +305,19 @@ export default function AdminSettingsPage() {
                   <div className="text-right">
                     <p className="font-medium">إدارة المناطق الفرعية</p>
                     <p className="text-sm text-gray-500">إضافة وتعديل المناطق الفرعية</p>
+                  </div>
+                </div>
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </Button>
+            
+            <Button variant="outline" className="h-20 flex items-center justify-between p-4" asChild>
+              <Link href="/admin/settings/slug-updater">
+                <div className="flex items-center space-x-3 space-x-reverse">
+                  <Link2 className="h-6 w-6 text-orange-600" />
+                  <div className="text-right">
+                    <p className="font-medium">تحديث Slugs الشركات</p>
+                    <p className="text-sm text-gray-500">استبدال الكلمات في روابط الشركات</p>
                   </div>
                 </div>
                 <ArrowRight className="h-4 w-4" />

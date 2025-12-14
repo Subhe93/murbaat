@@ -222,3 +222,4 @@ export function CompanyQRModal({ companyName, companySlug, isOpen, onClose }: Co
   );
 }
 
+
