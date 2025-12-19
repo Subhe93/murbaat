@@ -245,14 +245,14 @@ const nextConfig = {
       ...legacyRedirects.map((redirect) => ({
         source: redirect.source,
         destination: `https://twsia.com${redirect.destination}`,
-        permanent: true, // 301 redirect
+        statusCode: 301,
         basePath: false,
       })),
       // توجيه عام لأي صفحة أخرى غير موجودة في القائمة
       {
         source: "/:path*",
         destination: "https://twsia.com/:path*",
-        permanent: true,
+        statusCode: 301,
         basePath: false,
       },
     ];
