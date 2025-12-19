@@ -1,3 +1,5 @@
+const { legacyRedirects } = require("./lib/redirects");
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // تحسين الأداء والـ SEO
@@ -73,7 +75,6 @@ const nextConfig = {
   // تحسين الـ Headers
   async headers() {
     return [
- 
       {
         source: "/(.*)",
         headers: [
@@ -91,7 +92,7 @@ const nextConfig = {
           },
         ],
       },
-            {
+      {
         source: "/admin/:path*",
         headers: [
           {
@@ -239,6 +240,20 @@ const nextConfig = {
         source: "/home",
         destination: "/",
         permanent: true,
+      },
+      // توجيهات الدومين القديم murabaat.com إلى twsia.com
+      ...legacyRedirects.map((redirect) => ({
+        source: redirect.source,
+        destination: `https://twsia.com${redirect.destination}`,
+        permanent: true, // 301 redirect
+        basePath: false,
+      })),
+      // توجيه عام لأي صفحة أخرى غير موجودة في القائمة
+      {
+        source: "/:path*",
+        destination: "https://twsia.com/:path*",
+        permanent: true,
+        basePath: false,
       },
     ];
   },
